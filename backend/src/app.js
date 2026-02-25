@@ -5,6 +5,7 @@ const cors = require("cors")
 const userRoutes = require('./routes/users');
 const vendorRoutes = require('./routes/vendors');
 const commodityRoutes = require('./routes/commodities');
+const userProfiles =  require("./routes/userProfiles")
 const { errorHandler } = require('./middlewares/errorHandler');
 const app = express();
 app.use(cors())
@@ -15,6 +16,7 @@ const port = process.env.PORT || 3000
 app.use(userRoutes);
 app.use(vendorRoutes);
 app.use(commodityRoutes);
+app.use(userProfiles);
 
 app.get('/', (req, res) => {
     res.status(200).json({ msg: "server is running" })

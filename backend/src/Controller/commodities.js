@@ -1,5 +1,4 @@
 const pool = require('../db/db');
-const { get } = require('../routes/users');
 const { getAllCommoditiesQuery, getCommodityQuery, addNewCommodityQuery, deleteCommodityQuery } = require('../services/commodityQuery');
 
 
