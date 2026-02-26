@@ -6,13 +6,14 @@ const userRoutes = require('./routes/users');
 const vendorRoutes = require('./routes/vendors');
 const commodityRoutes = require('./routes/commodities');
 const userProfiles =  require("./routes/userProfiles")
+const registerAndLoginRoutes = require('./routes/registerAndLogin')
 const { errorHandler } = require('./middlewares/errorHandler');
 const app = express();
 app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const port = process.env.PORT || 3000
-
+app.use(registerAndLoginRoutes);
 app.use(userRoutes);
 app.use(vendorRoutes);
 app.use(commodityRoutes);
