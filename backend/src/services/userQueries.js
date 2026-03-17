@@ -1,25 +1,25 @@
 const getUserQuery = `
-   Select * 
+   select *
    from users
    where id = $1
 `
 const getALLUsersQuery = `
- Select *
+ select *
  from users
 `
 const addNewUserQuery = `
- Insert into users(name , email , password)
+ insert into users(name , email , password)
  values($1 , $2 , $3)
  returning *
 `
 const deleteUserQuery = `
- Delete from users
+ delete from users
  where id = $1
  returning *
 `
 
 const updateUserQuery = `
-update users 
+update users
 set name = $1 , email = $2 , password = $3
 where id = $4
 returning id , name , email

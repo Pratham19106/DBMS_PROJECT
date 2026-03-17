@@ -8,7 +8,7 @@ const getUserProfileQuery = `
 `
 
 const addUserProfileQuery = `
-  Insert into profiles(user_id , business_name , phone_number , address)
+  insert into profiles(user_id , business_name , phone_number , address)
   values($1 , $2 , $3 , $4)
   returning *
 `
