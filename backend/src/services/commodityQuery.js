@@ -1,25 +1,26 @@
 const getCommodityQuery = `
-SELECT * FROM commodities
-WHERE id = $1
+select * from commodities
+where id = $1
 `
 const getAllCommoditiesQuery = `
-select * from commdities
+select * from commodities
 where user_id = $1
 `
 const addNewCommodityQuery =
     `
-INSERT INTO commodities(name,quantity,unit,user_id)
-VALUES($1,$2,$3,$4)
+insert into commodities(name,quantity,unit,user_id)
+values($1,$2,$3,$4)
 returning *
 `
 const updateCommodityQuery = `
-UPDATE commodities
-set  quantity = $1
-RETURNING *
+update commodities
+set quantity = $1
+where id = $2
+returning *
 `
 const deleteCommodityQuery = `
-DELETE FROM commodities 
-Where id = $1
+delete from commodities
+where id = $1
 `
 module.exports = {
     getCommodityQuery,

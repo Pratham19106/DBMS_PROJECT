@@ -9,7 +9,7 @@ const getAllCommodies = async (req, res, next) => {
 
         if (result.rows.length === 0) {
             const error = new Error("No commodities found for this user")
-            error.status(404)
+            error.status = 404
             return next(error)
         }
 
@@ -44,19 +44,20 @@ const addNewCommodity = async (req, res, next) => {
         const userId = req.params.userId
         const { name, quantity, unit } = req.body
 
-        name.toLowerCase()
-        const query =
-            `Select name from commodities
-        where name == ${name} and user_id = ${userId}`
+        const normalizedName = name.toLowerCase();
 
-        const ifExist = await pool.query(query)
-        if (ifExist.rows.lenfth > 0) {
-            const error = new Error("Commodity already exist")
-            error.status = 409
-            return next(error)
-        }
+        const ifExist = await pool.query(
+         'select id from commodities where name = $1 and user_id = $2',
+         [normalizedName, userId]
+         );
 
-        const result = await pool.query(addNewCommodityQuery, [name, quantity, unit, userId])
+         if (ifExist.rows.length > 0) {
+         const error = new Error("Commodity already exist");
+           error.status = 409;
+          return next(error);
+         }
+
+       const result = await pool.query(addNewCommodityQuery, [normalizedName, quantity, unit, userId]);
         if (result.rows.length === 0) {
             const error = new Error("Failed to add commodity")
             error.status = 500

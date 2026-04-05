@@ -51,8 +51,16 @@ const getAllVendorsForUser = async (req, res, next) => {
 }
 const addNewVendor = async (req, res, next) => {
     try {
-        const { user_id, name, phone_number } = req.body;
-        const result = await pool.query(addNewVendorQuery, [user_id, name, phone_number])
+        const userId = req.params.userId;
+        const { name, phone_number } = req.body;
+
+        if (!userId || !name || !phone_number) {
+            const error = new Error('userId, name and phone_number are required');
+            error.status = 400;
+            return next(error);
+        }
+
+        const result = await pool.query(addNewVendorQuery, [userId, name, phone_number])
 
         return res.status(201).json({
             success: true,
@@ -66,7 +74,7 @@ const addNewVendor = async (req, res, next) => {
             return next(error)
         }
         if (err.code === '23502') {
-            const error = new Error('Bad Request')
+            const error = new Error(err.detail || 'Bad Request')
             error.status = 400
             return next(error)
         }
@@ -78,9 +86,9 @@ const addNewVendor = async (req, res, next) => {
 const updateVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
-        const { name, phone_number } = req.body;
+        let { name, phone_number } = req.body;
         const fetchVendorData = await pool.query(getVendorQuery, [vendorId])
-        if (fetchVendorData || fetchVendorData.rows.length == 0) {
+        if (!fetchVendorData || fetchVendorData.rows.length == 0) {
             const err = new Error("Vendor not found")
             err.status = 404
             return next(err)
