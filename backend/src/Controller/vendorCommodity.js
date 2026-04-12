@@ -12,12 +12,6 @@ const getCommoditiesForVendor = async (req, res, next) => {
         const vendorId = req.params.vendorId;
         const result = await pool.query(getCommoditiesForVendorQuery, [vendorId])
 
-        if (result.rows.length === 0) {
-            const error = new Error("No commodities found for this vendor")
-            error.status = 404
-            return next(error)
-        }
-
         return res.status(200).json({ commodities: result.rows })
     } catch (err) {
         return next(err)
@@ -28,12 +22,6 @@ const getVendorsForCommodity = async (req, res, next) => {
     try {
         const commodityId = req.params.commodityId;
         const result = await pool.query(getVendorsForCommodityQuery, [commodityId])
-
-        if (result.rows.length === 0) {
-            const error = new Error("No vendors found for this commodity")
-            error.status = 404
-            return next(error)
-        }
 
         return res.status(200).json({ vendors: result.rows })
     } catch (err) {
@@ -47,9 +35,10 @@ const getVendorSuggestionForCommodity = async (req, res, next) => {
         const result = await pool.query(getVendorSuggestionForCommodityQuery, [commodityId, userId])
 
         if (result.rows.length === 0) {
-            const error = new Error("No vendors found for this commodity")
-            error.status = 404
-            return next(error)
+            return res.status(200).json({
+                suggested_vendor: null,
+                all_vendors: []
+            })
         }
 
         return res.status(200).json({
@@ -64,15 +53,17 @@ const getVendorSuggestionForCommodity = async (req, res, next) => {
 const linkCommodityToVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.vendorId;
-        const { commodity_id } = req.body;
+        const commodityIdInput = req.body?.commodity_id ?? req.body?.commodityId;
+        const commodityId = String(commodityIdInput ?? '').trim();
 
-        if (!commodity_id) {
+
+        if (!commodityId) {
             const error = new Error('commodity_id is required')
             error.status = 400
             return next(error)
         }
 
-        await pool.query(linkCommodityToVendorQuery, [vendorId, commodity_id])
+        await pool.query(linkCommodityToVendorQuery, [vendorId, commodityId])
 
         return res.status(201).json({
             success: true,

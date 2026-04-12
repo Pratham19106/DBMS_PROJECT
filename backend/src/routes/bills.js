@@ -1,6 +1,7 @@
+
 const express = require('express')
 const router = express.Router()
-const {getBill,getAllBillsForUser, getAllBillsForVendor, addNewBill, updateBill, deleteBill} = require('../Controller/bills')
+const { getBill, getAllBillsForUser, getAllBillsForVendor, addNewBill, updateBill, deleteBill } = require('../Controller/bills')
 
 router.get('/users/:userId/bills', getAllBillsForUser)
 router.get('/users/:userId/bills/:id', getBill)

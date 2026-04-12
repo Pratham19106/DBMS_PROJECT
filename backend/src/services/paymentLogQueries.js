@@ -38,7 +38,8 @@ select v.id, v.name, v.phone_number,
     count(b.id) as unpaid_bill_count
 from vendors v
 join bills b on b.vendor_id = v.id
-where b.user_id = $1 and b.status != 'paid'
+where b.user_id = $1
+    and coalesce(b.total_amount, 0) - coalesce(b.paid_amount, 0) > 0
 group by v.id, v.name, v.phone_number
 having coalesce(sum(b.total_amount - b.paid_amount), 0) > 0
 order by oldest_bill_date asc, pending_amount desc

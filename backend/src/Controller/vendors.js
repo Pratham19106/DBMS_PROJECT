@@ -19,12 +19,6 @@ const getAllVendors = async (req, res, next) => {
     try {
         const result = await pool.query(getAllVendorsQuery)
 
-        if (!result || result.rows.length == 0) {
-            const err = new Error("No Vendors found")
-            err.status = 404
-            return next(err)
-        }
-
         return res.status(200).json({
             vendors: result.rows
         })
@@ -36,12 +30,6 @@ const getAllVendorsForUser = async (req, res, next) => {
     try {
         const userId = req.params.userId;
         const result = await pool.query(getAllVendorsForUserQuery, [userId])
-
-        if (!result || result.rows.length == 0) {
-            const err = new Error("No Vendors found for this user")
-            err.status = 404
-            return next(err)
-        }
         return res.status(200).json({
             vendors: result.rows
         })

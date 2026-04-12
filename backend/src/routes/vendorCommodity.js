@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const {getCommoditiesForVendor,getVendorsForCommodity,getVendorSuggestionForCommodity,linkCommodityToVendor,unlinkCommodityFromVendor} = require('../Controller/vendorCommodity')
+const { getCommoditiesForVendor, getVendorsForCommodity, getVendorSuggestionForCommodity, linkCommodityToVendor, unlinkCommodityFromVendor } = require('../Controller/vendorCommodity')
 
 router.get('/users/:userId/vendors/:vendorId/commodities', getCommoditiesForVendor)
 router.get('/users/:userId/commodities/:commodityId/vendors', getVendorsForCommodity)
@@ -9,3 +9,4 @@ router.post('/users/:userId/vendors/:vendorId/commodities', linkCommodityToVendo
 router.delete('/users/:userId/vendors/:vendorId/commodities/:commodityId', unlinkCommodityFromVendor)
 
 module.exports = router
+

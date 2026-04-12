@@ -17,7 +17,9 @@ select v.id, v.name, v.phone_number,
     coalesce(sum(b.total_amount - b.paid_amount), 0) as pending_amount
 from vendor_commodity vc
 join vendors v on vc.vendor_id = v.id
-left join bills b on b.vendor_id = v.id and b.user_id = $2 and b.status != 'paid'
+left join bills b on b.vendor_id = v.id
+    and b.user_id = $2
+    and coalesce(b.total_amount, 0) - coalesce(b.paid_amount, 0) > 0
 where vc.commodity_id = $1 and v.user_id = $2
 group by v.id, v.name, v.phone_number
 order by pending_amount asc
