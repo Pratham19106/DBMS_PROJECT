@@ -180,3 +180,29 @@
 .pulse-dot {
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
+
+/* Themed scrollbar used by large dialogs like Add Bill. */
+.bill-modal-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--secondary);
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar-track {
+  border-radius: 9999px;
+  background: var(--secondary);
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid var(--secondary);
+  border-radius: 9999px;
+  background: linear-gradient(180deg, var(--primary), var(--chart-1));
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--chart-1), var(--primary));
+}

@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { CalendarIcon } from "lucide-react"
+import { type FormEvent, useEffect, useMemo, useState } from "react"
+import { CircleX, Plus, ReceiptText, Trash2 } from "lucide-react"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,202 +20,557 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { vendors, commodities } from "@/lib/mock-data"
+import {
+  addBill,
+  ApiRequestError,
+  getCurrentUserId,
+  getVendorCommodities,
+  getVendors,
+  type AddBillCommodityPayload,
+  type AddBillPayload,
+  type BackendCommodity,
+} from "@/lib/api"
 
-interface AddSupplyDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+type DraftBillItem = {
+  id: string
+  commodityId: string
+  suppliedAmmount: string
+  unit: string
+  rate: string
+  name: string
 }
 
-export function AddSupplyDialog({ open, onOpenChange }: AddSupplyDialogProps) {
-  const [formData, setFormData] = useState({
-    vendorId: "",
-    commodity: "",
-    quantity: "",
-    unit: "",
+interface AddBillDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onBillCreated?: () => Promise<void> | void
+}
+
+let draftItemSeed = 0
+
+function createDraftItem(): DraftBillItem {
+  draftItemSeed += 1
+  return {
+    id: `item-${draftItemSeed}`,
+    commodityId: "",
+    suppliedAmmount: "",
+    unit: "kg",
     rate: "",
-    date: new Date().toISOString().split("T")[0],
+    name: "",
+  }
+}
+
+function asNumber(value: string): number {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function formatCurrency(value: number): string {
+  return `₹${Math.max(value, 0).toLocaleString("en-IN")}`
+}
+
+export function AddBillDialog({
+  open,
+  onOpenChange,
+  onBillCreated,
+}: AddBillDialogProps) {
+  const userId = getCurrentUserId()
+  const [selectedVendorId, setSelectedVendorId] = useState("")
+  const [paidAmount, setPaidAmount] = useState("0")
+  const [billUrl, setBillUrl] = useState("")
+  const [items, setItems] = useState<DraftBillItem[]>([createDraftItem()])
+  const [formError, setFormError] = useState<string | null>(null)
+
+  const vendorsQuery = useQuery({
+    queryKey: ["vendors", userId],
+    queryFn: () => getVendors(userId),
+    enabled: open,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // In a real app, this would submit to an API
-    console.log("Submitting supply entry:", formData)
-    onOpenChange(false)
-    setFormData({
-      vendorId: "",
-      commodity: "",
-      quantity: "",
-      unit: "",
-      rate: "",
-      date: new Date().toISOString().split("T")[0],
+  const vendorCommoditiesQuery = useQuery({
+    queryKey: ["vendor-commodities", userId, selectedVendorId],
+    queryFn: () => getVendorCommodities(userId, selectedVendorId),
+    enabled: open && selectedVendorId.length > 0,
+  })
+
+  const vendorCommodities = vendorCommoditiesQuery.data ?? []
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedVendorId("")
+      setPaidAmount("0")
+      setBillUrl("")
+      setItems([createDraftItem()])
+      setFormError(null)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!selectedVendorId) return
+    setItems([createDraftItem()])
+    setFormError(null)
+  }, [selectedVendorId])
+
+  const normalizedItems = useMemo(() => {
+    return items.map((item) => {
+      const quantity = asNumber(item.suppliedAmmount)
+      const rate = asNumber(item.rate)
+      const lineCost = Math.round(quantity * rate)
+
+      return {
+        ...item,
+        quantity,
+        rate,
+        lineCost,
+      }
+    })
+  }, [items])
+
+  const billTotalAmount = useMemo(() => {
+    return normalizedItems.reduce((sum, item) => sum + (item.lineCost > 0 ? item.lineCost : 0), 0)
+  }, [normalizedItems])
+
+  const paidAmountNumber = asNumber(paidAmount)
+  const pendingAmount = Math.max(billTotalAmount - paidAmountNumber, 0)
+
+  const createBillMutation = useMutation({
+    mutationFn: (payload: AddBillPayload) => addBill(userId, payload),
+    onSuccess: async () => {
+      if (onBillCreated) {
+        await onBillCreated()
+      }
+      onOpenChange(false)
+    },
+  })
+
+  const handleDraftCommodityChange = (draftId: string, commodityId: string) => {
+    const selectedCommodity = vendorCommodities.find((commodity) => commodity.id === commodityId)
+
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== draftId) return item
+        return {
+          ...item,
+          commodityId,
+          name: selectedCommodity?.name ?? item.name,
+          unit: selectedCommodity?.unit ?? item.unit,
+        }
+      })
+    )
+  }
+
+  const updateDraftItem = (draftId: string, updater: (draft: DraftBillItem) => DraftBillItem) => {
+    setItems((prev) => prev.map((draft) => (draft.id === draftId ? updater(draft) : draft)))
+  }
+
+  const addDraftItem = () => {
+    setItems((prev) => [...prev, createDraftItem()])
+  }
+
+  const removeDraftItem = (draftId: string) => {
+    setItems((prev) => {
+      if (prev.length === 1) {
+        return prev
+      }
+      return prev.filter((draft) => draft.id !== draftId)
     })
   }
 
-  const totalAmount =
-    Number(formData.quantity) * Number(formData.rate) || 0
+  const buildCommodityPayload = (): AddBillCommodityPayload[] => {
+    return normalizedItems
+      .filter((item) => item.commodityId || item.suppliedAmmount || item.rate)
+      .map((item) => {
+        const commodity = vendorCommodities.find((entry) => entry.id === item.commodityId)
+        const unit = item.unit.trim() || commodity?.unit || "kg"
+        const name = commodity?.name ?? item.name.trim()
+
+        return {
+          commodity_id: item.commodityId,
+          supplied_ammount: Math.round(item.quantity),
+          unit,
+          cost: item.lineCost,
+          name,
+        }
+      })
+  }
+
+  const validateCommodityPayload = (payload: AddBillCommodityPayload[]): string | null => {
+    if (payload.length === 0) {
+      return "Add at least one commodity item to this bill"
+    }
+
+    for (const commodity of payload) {
+      if (!commodity.commodity_id) {
+        return "Each row must have a commodity selected"
+      }
+
+      if (!Number.isFinite(commodity.supplied_ammount) || commodity.supplied_ammount <= 0) {
+        return "Supplied amount must be greater than 0"
+      }
+
+      if (!Number.isFinite(commodity.cost) || commodity.cost <= 0) {
+        return "Rate must be greater than 0 for all rows"
+      }
+
+      if (!commodity.name.trim()) {
+        return "Commodity name is missing in one of the rows"
+      }
+    }
+
+    return null
+  }
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    setFormError(null)
+
+    if (!selectedVendorId) {
+      setFormError("Select a vendor first")
+      return
+    }
+
+    const commodities = buildCommodityPayload()
+    const commodityValidationError = validateCommodityPayload(commodities)
+
+    if (commodityValidationError) {
+      setFormError(commodityValidationError)
+      return
+    }
+
+    if (!Number.isFinite(paidAmountNumber) || paidAmountNumber < 0) {
+      setFormError("Paid amount cannot be negative")
+      return
+    }
+
+    if (paidAmountNumber > billTotalAmount) {
+      setFormError("Paid amount cannot be greater than the bill total")
+      return
+    }
+
+    const payload: AddBillPayload = {
+      vendor_id: selectedVendorId,
+      total_amount: billTotalAmount,
+      paid_amount: paidAmountNumber,
+      bill_url: billUrl.trim().length > 0 ? billUrl.trim() : null,
+      commodities,
+    }
+
+    try {
+      await createBillMutation.mutateAsync(payload)
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError
+          ? error.message
+          : "Failed to create bill"
+      setFormError(message)
+    }
+  }
+
+  const renderCommodityOptionLabel = (commodity: BackendCommodity) => {
+    return `${commodity.name} (${commodity.unit})`
+  }
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && createBillMutation.isPending) {
+      return
+    }
+    onOpenChange(nextOpen)
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-border/50 bg-card sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-card-foreground">
-            Add New Supply Entry
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Vendor Select */}
-          <div className="space-y-2">
-            <Label htmlFor="vendor" className="text-card-foreground">
-              Vendor
-            </Label>
-            <Select
-              value={formData.vendorId}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, vendorId: value }))
-              }
-            >
-              <SelectTrigger className="bg-secondary">
-                <SelectValue placeholder="Select vendor..." />
-              </SelectTrigger>
-              <SelectContent>
-                {vendors.map((vendor) => (
-                  <SelectItem key={vendor.id} value={vendor.id}>
-                    {vendor.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Commodity Select */}
-          <div className="space-y-2">
-            <Label htmlFor="commodity" className="text-card-foreground">
-              Commodity
-            </Label>
-            <Select
-              value={formData.commodity}
-              onValueChange={(value) => {
-                const selectedCommodity = commodities.find(
-                  (c) => c.name === value
-                )
-                setFormData((prev) => ({
-                  ...prev,
-                  commodity: value,
-                  unit: selectedCommodity?.unit || "",
-                }))
-              }}
-            >
-              <SelectTrigger className="bg-secondary">
-                <SelectValue placeholder="Select commodity..." />
-              </SelectTrigger>
-              <SelectContent>
-                {commodities.map((commodity) => (
-                  <SelectItem key={commodity.id} value={commodity.name}>
-                    {commodity.icon} {commodity.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Quantity & Unit */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="quantity" className="text-card-foreground">
-                Quantity
-              </Label>
-              <Input
-                id="quantity"
-                type="number"
-                placeholder="Enter quantity"
-                value={formData.quantity}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, quantity: e.target.value }))
-                }
-                className="bg-secondary font-mono"
-              />
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName="bg-black/45 backdrop-blur-md"
+        className="h-[90vh] w-[96vw] max-w-[96vw]! overflow-hidden border-border/50 bg-card p-0 sm:w-[94vw] sm:max-w-[94vw]! lg:w-[92vw] lg:max-w-[92vw]! xl:w-[88vw]"
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <DialogHeader className="border-b border-border/50 px-6 py-5 text-left">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-card-foreground">
+                  <ReceiptText className="h-6 w-6 text-emerald-400" />
+                  Add New Bill
+                </DialogTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Create a supply bill with item-wise quantities. Bill total updates automatically.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <CircleX className="h-5 w-5" />
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="unit" className="text-card-foreground">
-                Unit
-              </Label>
-              <Input
-                id="unit"
-                value={formData.unit}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, unit: e.target.value }))
-                }
-                placeholder="kg, liters, etc."
-                className="bg-secondary"
-              />
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+            <div className="bill-modal-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-5 pr-4">
+              <div className="grid gap-5 xl:grid-cols-[1.9fr_1fr]">
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-border/60 bg-linear-to-br from-secondary/35 via-card/40 to-secondary/15 p-4 shadow-sm">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-card-foreground">Vendor</Label>
+                        <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
+                          <SelectTrigger className="bg-secondary">
+                            <SelectValue
+                              placeholder={vendorsQuery.isLoading ? "Loading vendors..." : "Select vendor"}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(vendorsQuery.data ?? []).map((vendor) => (
+                              <SelectItem key={vendor.id} value={vendor.id}>
+                                {vendor.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="bill-paid-amount" className="text-card-foreground">
+                          Paid Amount (Optional)
+                        </Label>
+                        <Input
+                          id="bill-paid-amount"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={paidAmount}
+                          onChange={(event) => setPaidAmount(event.target.value)}
+                          className="bg-secondary font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="bill-url" className="text-card-foreground">
+                          Bill URL (Optional)
+                        </Label>
+                        <Input
+                          id="bill-url"
+                          value={billUrl}
+                          onChange={(event) => setBillUrl(event.target.value)}
+                          placeholder="https://example.com/bill.pdf"
+                          className="bg-secondary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border/60 bg-linear-to-br from-secondary/35 via-card/40 to-secondary/15 p-4 shadow-sm">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-card-foreground">Bill Items</p>
+                        <p className="text-xs text-muted-foreground">
+                          Select commodities linked to this vendor and enter quantity + rate.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addDraftItem}
+                        disabled={!selectedVendorId || vendorCommoditiesQuery.isLoading}
+                        className="border-border/50 bg-secondary"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Item
+                      </Button>
+                    </div>
+
+                    {selectedVendorId && vendorCommoditiesQuery.isLoading && (
+                      <div className="rounded-lg border border-border/50 bg-card/40 p-3 text-sm text-muted-foreground">
+                        Loading vendor commodities...
+                      </div>
+                    )}
+
+                    {selectedVendorId && !vendorCommoditiesQuery.isLoading && vendorCommodities.length === 0 && (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+                        This vendor has no linked commodities yet. Link commodities in Vendor Management first.
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {normalizedItems.map((item, index) => {
+                        const itemCostPreview = item.lineCost
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="rounded-lg border border-border/50 bg-card/35 p-3"
+                          >
+                            <div className="mb-3 flex items-center justify-between gap-2">
+                              <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-300">
+                                Item {index + 1}
+                              </Badge>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeDraftItem(item.id)}
+                                disabled={items.length === 1}
+                                className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                Remove
+                              </Button>
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-6">
+                              <div className="space-y-1 md:col-span-2">
+                                <Label className="text-xs text-muted-foreground">Commodity</Label>
+                                <Select
+                                  value={item.commodityId}
+                                  onValueChange={(value) => handleDraftCommodityChange(item.id, value)}
+                                  disabled={!selectedVendorId || vendorCommodities.length === 0}
+                                >
+                                  <SelectTrigger className="bg-secondary">
+                                    <SelectValue placeholder="Select commodity" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {vendorCommodities.map((commodity) => (
+                                      <SelectItem key={commodity.id} value={commodity.id}>
+                                        {renderCommodityOptionLabel(commodity)}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Quantity</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={item.suppliedAmmount}
+                                  onChange={(event) =>
+                                    updateDraftItem(item.id, (draft) => ({
+                                      ...draft,
+                                      suppliedAmmount: event.target.value,
+                                    }))
+                                  }
+                                  className="bg-secondary font-mono"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Unit</Label>
+                                <Input
+                                  value={item.unit}
+                                  onChange={(event) =>
+                                    updateDraftItem(item.id, (draft) => ({
+                                      ...draft,
+                                      unit: event.target.value,
+                                    }))
+                                  }
+                                  className="bg-secondary"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Rate (₹)</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={item.rate}
+                                  onChange={(event) =>
+                                    updateDraftItem(item.id, (draft) => ({
+                                      ...draft,
+                                      rate: event.target.value,
+                                    }))
+                                  }
+                                  className="bg-secondary font-mono"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Line Total</Label>
+                                <div className="rounded-md border border-border/50 bg-secondary px-3 py-2 font-mono text-sm text-amber-300">
+                                  {formatCurrency(itemCostPreview)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-border/60 bg-linear-to-br from-card via-secondary/30 to-card p-4 shadow-sm">
+                    <p className="text-sm font-semibold text-card-foreground">Bill Summary</p>
+                    <div className="mt-3 space-y-2 text-sm">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Items</span>
+                        <span className="font-mono">{normalizedItems.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Total Amount</span>
+                        <span className="font-mono font-semibold text-amber-300">
+                          {formatCurrency(billTotalAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Paid Amount</span>
+                        <span className="font-mono text-emerald-300">
+                          {formatCurrency(paidAmountNumber)}
+                        </span>
+                      </div>
+                      <div className="mt-2 border-t border-border/50 pt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-card-foreground">Pending Amount</span>
+                          <span className="font-mono font-bold text-card-foreground">
+                            {formatCurrency(pendingAmount)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Backend payload uses commodities[].supplied_ammount and computes bill status from paid and total.
+                    </p>
+                  </div>
+
+                  {formError && (
+                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                      {formError}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Rate per Unit */}
-          <div className="space-y-2">
-            <Label htmlFor="rate" className="text-card-foreground">
-              Rate per Unit (₹)
-            </Label>
-            <Input
-              id="rate"
-              type="number"
-              placeholder="Enter rate"
-              value={formData.rate}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, rate: e.target.value }))
-              }
-              className="bg-secondary font-mono"
-            />
-          </div>
-
-          {/* Date */}
-          <div className="space-y-2">
-            <Label htmlFor="date" className="text-card-foreground">
-              Date of Supply
-            </Label>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, date: e.target.value }))
-                }
-                className="bg-secondary pl-9"
-              />
+            <div className="border-t border-border/50 px-6 py-4">
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="border-border/50 bg-secondary"
+                  disabled={createBillMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  disabled={createBillMutation.isPending || !selectedVendorId}
+                >
+                  {createBillMutation.isPending ? "Creating Bill..." : "Create Bill"}
+                </Button>
+              </div>
             </div>
-          </div>
-
-          {/* Total Amount Preview */}
-          {totalAmount > 0 && (
-            <div className="rounded-lg border border-border/50 bg-secondary/30 p-4">
-              <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="font-mono text-2xl font-bold text-amber-400">
-                ₹{totalAmount.toLocaleString("en-IN")}
-              </p>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="border-border/50 bg-secondary"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
-            >
-              Add Supply Entry
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

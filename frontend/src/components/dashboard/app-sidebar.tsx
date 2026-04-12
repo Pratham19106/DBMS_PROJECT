@@ -1,6 +1,6 @@
 "use client"
 
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
   Store,
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useAuth } from "@/context/AuthContext"
 
 const ownerName = String(import.meta.env.VITE_OWNER_NAME ?? "Restaurant Owner")
 const restaurantName = String(import.meta.env.VITE_RESTAURANT_NAME ?? "SupplySync Account")
@@ -36,6 +37,24 @@ const navItems = [
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { logout, user } = useAuth()
+
+  const displayName = user?.name?.trim() || user?.email || ownerName
+  const displaySubtext = user?.email || restaurantName
+  const initials =
+    displayName
+      .split(" ")
+      .filter(Boolean)
+      .map((namePart) => namePart[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U"
+
+  const handleLogout = () => {
+    logout()
+    navigate("/login", { replace: true })
+  }
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -100,18 +119,18 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         <div className="border-t border-border/50 p-4">
           <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
             <Avatar className="h-9 w-9 border border-border/50">
-              <AvatarImage src="/placeholder-avatar.jpg" alt={ownerName} />
+              <AvatarImage src="/placeholder-avatar.jpg" alt={displayName} />
               <AvatarFallback className="bg-secondary text-secondary-foreground">
-                {ownerName.split(" ").map((namePart) => namePart[0]).join("")}
+                {initials}
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="flex-1 overflow-hidden">
                 <p className="truncate text-sm font-medium text-foreground">
-                  {ownerName}
+                  {displayName}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {restaurantName}
+                  {displaySubtext}
                 </p>
               </div>
             )}
@@ -121,6 +140,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={handleLogout}
                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   >
                     <LogOut className="h-4 w-4" />

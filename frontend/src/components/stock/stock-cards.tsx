@@ -14,7 +14,7 @@ import {
 } from "@/lib/api"
 
 type UiCommodity = {
-  id: number
+  id: string
   name: string
   icon: string
   currentStock: number
@@ -75,7 +75,7 @@ export function StockCards() {
               unit: item.unit,
               reorderThreshold: 20,
               linkedVendorNames: linkedVendors.map((vendor) => vendor.name),
-            } as UiCommodity
+            }
           })
         )
 

@@ -311,8 +311,8 @@ export function VendorCommodityManager({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="kg">kg</SelectItem>
-                <SelectItem value="liters">liters</SelectItem>
-                <SelectItem value="units">units</SelectItem>
+                <SelectItem value="liter">liters</SelectItem>
+                <SelectItem value="pcs">pcs</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -90,8 +90,13 @@ const loginController = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            message: "User logined in successfully",
-            token
+            message: "User logged in successfully",
+            token,
+            user: {
+                id: isUserAlreadyRegistered.rows[0].id,
+                name: isUserAlreadyRegistered.rows[0].name,
+                email: isUserAlreadyRegistered.rows[0].email
+            }
         })
 
     } catch (error) {
