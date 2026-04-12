@@ -8,30 +8,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import {
-  addPaymentLog,
+  addPayment,
   ApiRequestError,
   type BackendBill,
   getCurrentUserId,
-  getPaymentSuggestion,
+  getPaymentPriorityList,
   getVendorBills,
 } from "@/lib/api"
 
 type PaymentPlanItem = {
   vendorId: string
   vendorName: string
+  priority: "urgent" | "high" | "medium" | "low"
   pendingAmount: number
   suggestedAmount: number
   billId: string | null
-  unpaidBillCount: number
   daysSinceOldestBill: number
 }
 
@@ -70,14 +63,13 @@ export function SmartPayPanel() {
   const queryClient = useQueryClient()
   const userId = getCurrentUserId()
   const [cashAvailable, setCashAvailable] = useState<string>("")
-  const [paymentMode, setPaymentMode] = useState<string>("cash")
   const [showPlan, setShowPlan] = useState(false)
   const [paidItems, setPaidItems] = useState<Set<string>>(new Set())
   const [actionError, setActionError] = useState<string | null>(null)
 
   const suggestionQuery = useQuery({
-    queryKey: ["payment-suggestion", userId],
-    queryFn: () => getPaymentSuggestion(userId),
+    queryKey: ["payment-priority", userId],
+    queryFn: () => getPaymentPriorityList(userId),
   })
 
   const suggestedVendors = suggestionQuery.data ?? []
@@ -99,13 +91,14 @@ export function SmartPayPanel() {
   })
 
   const addPaymentMutation = useMutation({
-    mutationFn: (payload: { vendor_id: string; bill_id: string; amount_paid: number; payment_mode: string }) =>
-      addPaymentLog(userId, payload),
+    mutationFn: (payload: { vendorId: string; billId: string; amount: number }) =>
+      addPayment(userId, payload),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["payment-suggestion", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["payment-priority", userId] }),
         queryClient.invalidateQueries({ queryKey: ["payment-suggestion-bills", userId] }),
         queryClient.invalidateQueries({ queryKey: ["payment-logs", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["vendor-bills", userId] }),
         queryClient.invalidateQueries({ queryKey: ["vendors-hydrated", userId] }),
       ])
     },
@@ -129,10 +122,9 @@ export function SmartPayPanel() {
 
     try {
       await addPaymentMutation.mutateAsync({
-        vendor_id: item.vendorId,
-        bill_id: item.billId,
-        amount_paid: item.suggestedAmount,
-        payment_mode: paymentMode,
+        vendorId: item.vendorId,
+        billId: item.billId,
+        amount: item.suggestedAmount,
       })
       setPaidItems((prev) => new Set([...prev, `${item.vendorId}-${item.billId}`]))
     } catch (error) {
@@ -156,14 +148,14 @@ export function SmartPayPanel() {
       const pendingAmount = Math.max(asNumber(vendor.pending_amount), 0)
       const suggestedAmount = Math.min(pendingAmount, remaining)
       if (suggestedAmount > 0) {
-        const vendorBills = billsByVendor[vendor.id] ?? []
+        const vendorBills = billsByVendor[vendor.vendor_id] ?? []
         plan.push({
-          vendorId: vendor.id,
-          vendorName: vendor.name,
+          vendorId: vendor.vendor_id,
+          vendorName: vendor.vendor_name,
+          priority: vendor.priority,
           pendingAmount,
           suggestedAmount,
           billId: selectOldestUnpaidBillId(vendorBills),
-          unpaidBillCount: asNumber(vendor.unpaid_bill_count),
           daysSinceOldestBill: toDaysSince(vendor.oldest_bill_date),
         })
         remaining -= suggestedAmount
@@ -241,17 +233,6 @@ export function SmartPayPanel() {
                 className="bg-secondary pl-9 font-mono"
               />
             </div>
-            <Select value={paymentMode} onValueChange={setPaymentMode}>
-              <SelectTrigger className="w-35 bg-secondary">
-                <SelectValue placeholder="Mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="upi">UPI</SelectItem>
-                <SelectItem value="cheque">Cheque</SelectItem>
-                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-              </SelectContent>
-            </Select>
             <Button
               onClick={handleGeneratePlan}
               className="bg-emerald-600 text-white hover:bg-emerald-700"
@@ -306,9 +287,15 @@ export function SmartPayPanel() {
                       </div>
                       <Badge
                         variant="outline"
-                        className="text-xs border-blue-500/30 bg-blue-500/10 text-blue-400"
+                        className={cn(
+                          "text-xs",
+                          item.priority === "urgent" && "border-red-500/30 bg-red-500/10 text-red-400",
+                          item.priority === "high" && "border-amber-500/30 bg-amber-500/10 text-amber-400",
+                          item.priority === "medium" && "border-blue-500/30 bg-blue-500/10 text-blue-400",
+                          item.priority === "low" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        )}
                       >
-                        {item.unpaidBillCount} unpaid
+                        {item.priority.toUpperCase()} priority
                       </Badge>
                     </div>
 

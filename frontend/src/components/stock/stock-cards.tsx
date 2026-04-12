@@ -5,12 +5,15 @@ import { ShoppingCart, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import {
   ApiRequestError,
   getCommodities,
   getCommodityVendors,
   getCurrentUserId,
+  getSmartVendorRecommendation,
+  type BackendSmartVendor,
 } from "@/lib/api"
 
 type UiCommodity = {
@@ -22,6 +25,13 @@ type UiCommodity = {
   unit: string
   reorderThreshold: number
   linkedVendorNames: string[]
+}
+
+type VendorPriorityState = {
+  loading: boolean
+  error: string | null
+  vendors: BackendSmartVendor[]
+  visible: boolean
 }
 
 function getCommodityIcon(name: string): string {
@@ -53,6 +63,9 @@ export function StockCards() {
   const [commodities, setCommodities] = useState<UiCommodity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [vendorPriorityByCommodity, setVendorPriorityByCommodity] = useState<
+    Record<string, VendorPriorityState>
+  >({})
 
   useEffect(() => {
     let ignore = false
@@ -128,11 +141,52 @@ export function StockCards() {
     )
   }
 
+  const handleBuyNow = async (commodityId: string) => {
+    setVendorPriorityByCommodity((prev) => ({
+      ...prev,
+      [commodityId]: {
+        loading: true,
+        error: null,
+        vendors: prev[commodityId]?.vendors ?? [],
+        visible: true,
+      },
+    }))
+
+    try {
+      const data = await getSmartVendorRecommendation(userId, commodityId)
+      setVendorPriorityByCommodity((prev) => ({
+        ...prev,
+        [commodityId]: {
+          loading: false,
+          error: null,
+          vendors: data.all_vendors ?? [],
+          visible: true,
+        },
+      }))
+    } catch (requestError) {
+      const message =
+        requestError instanceof ApiRequestError
+          ? requestError.message
+          : "Failed to fetch vendor priority"
+      setVendorPriorityByCommodity((prev) => ({
+        ...prev,
+        [commodityId]: {
+          loading: false,
+          error: message,
+          vendors: [],
+          visible: true,
+        },
+      }))
+    }
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {commodities.map((commodity) => {
         const percentage = (commodity.currentStock / commodity.maxStock) * 100
         const status = getStockStatus(percentage, commodity.reorderThreshold)
+        const priorityState = vendorPriorityByCommodity[commodity.id]
+        const shouldShowPriority = priorityState?.visible === true
 
         return (
           <Card
@@ -206,6 +260,8 @@ export function StockCards() {
 
               {/* Buy Button */}
               <Button
+                type="button"
+                onClick={() => void handleBuyNow(commodity.id)}
                 className={cn(
                   "w-full",
                   percentage <= commodity.reorderThreshold
@@ -216,6 +272,52 @@ export function StockCards() {
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 {percentage <= commodity.reorderThreshold ? "Buy Now" : "Order"}
               </Button>
+
+              {shouldShowPriority && (
+                <div className="rounded-lg border border-border/50 bg-secondary/30 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Vendor Priority
+                    </p>
+                    {priorityState.loading && (
+                      <Badge variant="outline" className="text-xs">
+                        Loading...
+                      </Badge>
+                    )}
+                  </div>
+
+                  {priorityState.error && (
+                    <p className="text-xs text-red-300">{priorityState.error}</p>
+                  )}
+
+                  {!priorityState.loading && !priorityState.error && priorityState.vendors.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No vendors found for this commodity.</p>
+                  )}
+
+                  {!priorityState.loading && !priorityState.error && priorityState.vendors.length > 0 && (
+                    <div className="space-y-2">
+                      {priorityState.vendors.slice(0, 5).map((vendor, index) => (
+                        <div
+                          key={`${commodity.id}-${vendor.vendor_id}`}
+                          className="flex items-center justify-between rounded-md border border-border/40 bg-card/60 px-2 py-1.5"
+                        >
+                          <div>
+                            <p className="text-xs font-medium text-card-foreground">
+                              #{index + 1} {vendor.vendor_name}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Pending: ₹{Number(vendor.pending_debt || 0).toLocaleString("en-IN")}
+                            </p>
+                          </div>
+                          <Badge className="bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/20">
+                            Score {Number(vendor.overall_score || 0).toFixed(1)}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )

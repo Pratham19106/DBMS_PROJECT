@@ -23,11 +23,11 @@ import {
 import { cn } from "@/lib/utils"
 import {
   ApiRequestError,
-  getBillPaymentLogs,
+  getBillPayments,
   getCurrentUserId,
-  getPaymentLogs,
+  getPayments,
   getVendorBills,
-  getVendorPaymentLogs,
+  getVendorPayments,
   getVendors,
 } from "@/lib/api"
 
@@ -74,14 +74,14 @@ export function PaymentHistory() {
     queryKey: [PAYMENT_HISTORY_QUERY_KEY, userId, selectedVendor, selectedBill],
     queryFn: async () => {
       if (selectedBill !== "all") {
-        return getBillPaymentLogs(userId, selectedBill)
+        return getBillPayments(userId, selectedBill)
       }
 
       if (selectedVendor !== "all") {
-        return getVendorPaymentLogs(userId, selectedVendor)
+        return getVendorPayments(userId, selectedVendor)
       }
 
-      return getPaymentLogs(userId)
+      return getPayments(userId)
     },
   })
 
@@ -180,13 +180,10 @@ export function PaymentHistory() {
               <TableHead className="text-muted-foreground">Vendor</TableHead>
               <TableHead className="text-muted-foreground">Bill</TableHead>
               <TableHead className="text-right text-muted-foreground">Amount Paid</TableHead>
-              <TableHead className="text-muted-foreground">Mode</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {logs.map((log) => {
-              const mode = log.payment_mode.toLowerCase()
-
               return (
                 <TableRow
                   key={log.id}
@@ -198,20 +195,7 @@ export function PaymentHistory() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">#{log.bill_id}</TableCell>
                   <TableCell className="text-right font-mono font-semibold text-emerald-400">
-                    ₹{asNumber(log.amount_paid).toLocaleString("en-IN")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        mode === "cash" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-                        mode === "upi" && "border-blue-500/30 bg-blue-500/10 text-blue-400",
-                        mode === "cheque" && "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                      )}
-                    >
-                      {log.payment_mode}
-                    </Badge>
+                    ₹{asNumber(log.amount).toLocaleString("en-IN")}
                   </TableCell>
                 </TableRow>
               )
@@ -219,7 +203,7 @@ export function PaymentHistory() {
 
             {logs.length === 0 && (
               <TableRow className="border-border/50 hover:bg-transparent">
-                <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
                   No payment logs found for this filter.
                 </TableCell>
               </TableRow>

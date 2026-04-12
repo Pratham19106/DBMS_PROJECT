@@ -73,6 +73,15 @@ export type BackendPaymentLog = {
   payment_date?: string
 }
 
+export type BackendPayment = {
+  id: string
+  user_id: string
+  vendor_id: string
+  bill_id: string
+  amount: number | string
+  payment_date?: string
+}
+
 export type BackendPaymentSuggestionVendor = {
   id: string
   name: string
@@ -82,11 +91,55 @@ export type BackendPaymentSuggestionVendor = {
   unpaid_bill_count: number | string
 }
 
+export type BackendPaymentPriorityVendor = {
+  vendor_id: string
+  vendor_name: string
+  tolerance_level: string
+  tolerance_amount: number | string
+  pending_amount: number | string
+  oldest_bill_date: string | null
+  days_waiting: number | string
+  priority: "urgent" | "high" | "medium" | "low"
+  priority_rank: number | string
+}
+
+export type BackendSmartVendor = {
+  vendor_id: string
+  vendor_name: string
+  contact_info: string | null
+  tolerance_level: string
+  tolerance_amount: number | string
+  pending_debt: number | string
+  oldest_unpaid_bill_date: string | null
+  last_purchase_date: string | null
+  tolerance_score: number | string
+  debt_score: number | string
+  recency_score: number | string
+  urgency_score: number | string
+  overall_score: number | string
+  recommendation_reason?: string
+}
+
+export type SmartVendorRecommendationResponse = {
+  recommended_vendor: BackendSmartVendor
+  all_vendors: BackendSmartVendor[]
+  analysis?: {
+    total_vendors_available: number
+    scoring_factors?: Record<string, string>
+  }
+}
+
 export type AddPaymentLogPayload = {
   vendor_id: string
   bill_id: string
   amount_paid: number
   payment_mode: string
+}
+
+export type AddPaymentPayload = {
+  vendorId: string
+  billId: string
+  amount: number
 }
 
 export type AddPaymentLogResponse = {
@@ -96,48 +149,10 @@ export type AddPaymentLogResponse = {
   bill: BackendBill
 }
 
-export type AddBillCommodityPayload = {
-  commodity_id: string
-  supplied_ammount: number
-  unit?: string
-  cost: number
-  name: string
-}
-
-export type AddBillPayload = {
-  vendor_id: string
-  total_amount: number
-  paid_amount?: number
-  bill_url?: string | null
-  commodities: AddBillCommodityPayload[]
-}
-
-export type AddBillResponse = {
-  success: boolean
+export type AddPaymentResponse = {
   msg: string
+  payment: BackendPayment
   bill: BackendBill
-  items: BackendBillItem[]
-}
-
-type RegisterResponse = {
-  success: boolean
-  msg: string
-  user: {
-    id: string | number
-    name?: string
-    email: string
-  }
-}
-
-type LoginResponse = {
-  success: boolean
-  message: string
-  token: string
-  user?: {
-    id: string | number
-    name?: string
-    email: string
-  }
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000"
@@ -483,10 +498,26 @@ export async function getVendorPaymentLogs(userId: string, vendorId: string): Pr
   })
 }
 
+export async function getVendorPayments(userId: string, vendorId: string): Promise<BackendPayment[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{ payments: BackendPayment[] }>(
+      `/users/${userId}/vendors/${vendorId}/payments`
+    )
+    return data.payments
+  })
+}
+
 export async function getPaymentLogs(userId: string): Promise<BackendPaymentLog[]> {
   return getListOrEmpty(async () => {
     const data = await request<{ payment_logs: BackendPaymentLog[] }>(`/users/${userId}/payment-logs`)
     return data.payment_logs
+  })
+}
+
+export async function getPayments(userId: string): Promise<BackendPayment[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{ payments: BackendPayment[] }>(`/users/${userId}/payments`)
+    return data.payments
   })
 }
 
@@ -499,11 +530,30 @@ export async function getBillPaymentLogs(userId: string, billId: string): Promis
   })
 }
 
+export async function getBillPayments(userId: string, billId: string): Promise<BackendPayment[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{ payments: BackendPayment[] }>(
+      `/users/${userId}/bills/${billId}/payments`
+    )
+    return data.payments
+  })
+}
+
 export async function addPaymentLog(
   userId: string,
   payload: AddPaymentLogPayload
 ): Promise<AddPaymentLogResponse> {
   return request<AddPaymentLogResponse>(`/users/${userId}/payment-logs`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function addPayment(
+  userId: string,
+  payload: AddPaymentPayload
+): Promise<AddPaymentResponse> {
+  return request<AddPaymentResponse>(`/users/${userId}/payments`, {
     method: "POST",
     body: JSON.stringify(payload),
   })
@@ -530,6 +580,34 @@ export async function getPaymentSuggestion(
 
     return []
   })
+}
+
+export async function getPaymentPriorityList(
+  userId: string
+): Promise<BackendPaymentPriorityVendor[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{
+      summary?: unknown
+      payment_priorities?: BackendPaymentPriorityVendor[]
+      recommendation?: string
+      msg?: string
+    }>(`/users/${userId}/purchase/payment-priority`)
+
+    if (Array.isArray(data.payment_priorities)) {
+      return data.payment_priorities
+    }
+
+    return []
+  })
+}
+
+export async function getSmartVendorRecommendation(
+  userId: string,
+  commodityId: string
+): Promise<SmartVendorRecommendationResponse> {
+  return request<SmartVendorRecommendationResponse>(
+    `/users/${userId}/purchase/vendor-recommendation/${commodityId}`
+  )
 }
 
 export async function getCommodities(userId: string): Promise<BackendCommodity[]> {

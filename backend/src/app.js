@@ -11,6 +11,9 @@ const purchaseRoutes = require("./routes/purchase")
 const vendorCommodityRoutes = require("./routes/vendorCommodity")
 const billRoutes = require("./routes/bills")
 const paymentLogRoutes = require("./routes/paymentLogs")
+
+const paymentRoutes = require("./routes/payments")
+
 const { errorHandler } = require('./middlewares/errorHandler');
 const app = express();
 app.use(cors())
@@ -26,6 +29,9 @@ app.use(purchaseRoutes)
 app.use(vendorCommodityRoutes)
 app.use(billRoutes)
 app.use(paymentLogRoutes)
+
+app.use(paymentRoutes)
+
 app.get('/', (req, res) => {
     res.status(200).json({ msg: "server is running" })
 })

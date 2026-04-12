@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
+import { AddPaymentForm } from "@/components/payments/add-payment-form"
 import { PaymentHistory } from "@/components/payments/payment-history"
 import { SmartPayPanel } from "@/components/payments/smart-pay-panel"
 
@@ -12,6 +13,8 @@ export default function PaymentsPage() {
             Track payment history and plan your daily payments.
           </div>
         </div>
+
+        <AddPaymentForm />
 
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
