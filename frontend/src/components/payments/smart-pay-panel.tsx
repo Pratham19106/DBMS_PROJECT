@@ -59,6 +59,10 @@ function toDaysSince(dateInput: string | null): number {
   return Math.max(Math.floor(diffMs / (1000 * 60 * 60 * 24)), 0)
 }
 
+function shortBillId(id: string): string {
+  return String(id).slice(-6).toUpperCase()
+}
+
 export function SmartPayPanel() {
   const queryClient = useQueryClient()
   const userId = getCurrentUserId()
@@ -324,7 +328,9 @@ export function SmartPayPanel() {
                     </div>
 
                     <p className="mb-3 text-xs text-muted-foreground">
-                      {item.billId ? `Will log payment against bill #${item.billId}` : "No unpaid bill available"}
+                      {item.billId
+                        ? `Will log payment against bill #${shortBillId(item.billId)}`
+                        : "No unpaid bill available"}
                     </p>
 
                     <Button

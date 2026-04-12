@@ -60,6 +60,10 @@ function formatDate(input?: string): string {
   })
 }
 
+function shortBillId(id: string): string {
+  return String(id).slice(-6).toUpperCase()
+}
+
 export function PaymentHistory() {
   const userId = getCurrentUserId()
   const [selectedVendor, setSelectedVendor] = useState<string>("all")
@@ -205,7 +209,7 @@ export function PaymentHistory() {
 
               return (
                 <SelectItem key={bill.id} value={String(bill.id)}>
-                  Bill #{bill.id} • ₹{Math.max(pending, 0).toLocaleString("en-IN")}
+                  Bill #{shortBillId(bill.id)} • ₹{Math.max(pending, 0).toLocaleString("en-IN")}
                 </SelectItem>
               )
             })}
@@ -249,27 +253,9 @@ export function PaymentHistory() {
                   <TableCell className="text-muted-foreground">
                     {log.entry_type === "received" ? "-" : `#${log.bill_id}`}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Badge
-                        className={cn(
-                          "border",
-                          log.entry_type === "received"
-                            ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                            : "border-rose-500/40 bg-rose-500/10 text-rose-300"
-                        )}
-                      >
-                        {log.entry_type === "received" ? "Received" : "Paid"}
-                      </Badge>
-                      <span
-                        className={cn(
-                          "font-mono font-semibold",
-                          log.entry_type === "received" ? "text-cyan-300" : "text-rose-300"
-                        )}
-                      >
-                        ₹{asNumber(log.amount).toLocaleString("en-IN")}
-                      </span>
-                    </div>
+                  <TableCell className="text-muted-foreground">#{shortBillId(log.bill_id)}</TableCell>
+                  <TableCell className="text-right font-mono font-semibold text-emerald-400">
+                    ₹{asNumber(log.amount).toLocaleString("en-IN")}
                   </TableCell>
                 </TableRow>
               )

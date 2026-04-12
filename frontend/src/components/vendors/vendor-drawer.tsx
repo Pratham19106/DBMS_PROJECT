@@ -23,6 +23,10 @@ import {
 } from "@/lib/api"
 import { VendorCommodityManager } from "./vendor-commodity-manager"
 
+function shortBillId(id: string): string {
+  return String(id).slice(-6).toUpperCase()
+}
+
 type UiVendor = {
   id: string
   name: string
@@ -339,7 +343,7 @@ export function VendorDrawer({
                             </div>
                             <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                               <span>{formatDate(payment.payment_date)}</span>
-                              <span>Bill #{payment.bill_id}</span>
+                              <span>Bill #{shortBillId(payment.bill_id)}</span>
                             </div>
                           </div>
                         ))}
@@ -360,7 +364,7 @@ export function VendorDrawer({
                             className="rounded-lg border border-border/50 bg-card/60 p-3"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium text-card-foreground">Bill #{entry.id}</p>
+                              <p className="text-sm font-medium text-card-foreground">Bill #{shortBillId(entry.id)}</p>
                               <p className="font-mono text-sm text-emerald-400">
                                 ₹{asNumber(entry.total_amount).toLocaleString("en-IN")}
                               </p>

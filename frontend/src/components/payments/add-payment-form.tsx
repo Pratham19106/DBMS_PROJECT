@@ -31,6 +31,10 @@ function pendingAmount(bill: BackendBill): number {
   return Math.max(asNumber(bill.total_amount) - asNumber(bill.paid_amount), 0)
 }
 
+function shortBillId(id: string): string {
+  return String(id).slice(-6).toUpperCase()
+}
+
 export function AddPaymentForm() {
   const queryClient = useQueryClient()
   const userId = getCurrentUserId()
@@ -147,7 +151,7 @@ export function AddPaymentForm() {
                 <SelectItem value="none">Select Bill</SelectItem>
                 {unpaidBills.map((bill) => (
                   <SelectItem key={bill.id} value={bill.id}>
-                    #{bill.id} • Pending ₹{pendingAmount(bill).toLocaleString("en-IN")}
+                    #{shortBillId(bill.id)} • Pending ₹{pendingAmount(bill).toLocaleString("en-IN")}
                   </SelectItem>
                 ))}
               </SelectContent>

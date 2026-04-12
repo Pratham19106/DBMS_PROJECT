@@ -20,25 +20,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import {
   addBill,
+  addCommodity,
   ApiRequestError,
+  getCommodities,
   getCurrentUserId,
   getVendorCommodities,
   getVendors,
+  linkCommodityToVendor,
   type AddBillCommodityPayload,
   type AddBillPayload,
   type BackendCommodity,
 } from "@/lib/api"
 
+type CommodityMode = "existing" | "new"
+
 type DraftBillItem = {
   id: string
+  commodityMode: CommodityMode
   commodityId: string
+  newCommodityName: string
   suppliedAmmount: string
   unit: string
   rate: string
-  name: string
 }
+
+const UNIT_OPTIONS = ["kg", "liter", "pcs"] as const
 
 interface AddBillDialogProps {
   open: boolean
@@ -52,11 +61,12 @@ function createDraftItem(): DraftBillItem {
   draftItemSeed += 1
   return {
     id: `item-${draftItemSeed}`,
+    commodityMode: "existing",
     commodityId: "",
+    newCommodityName: "",
     suppliedAmmount: "",
     unit: "kg",
     rate: "",
-    name: "",
   }
 }
 
@@ -93,7 +103,14 @@ export function AddBillDialog({
     enabled: open && selectedVendorId.length > 0,
   })
 
+  const userCommoditiesQuery = useQuery({
+    queryKey: ["commodities", userId],
+    queryFn: () => getCommodities(userId),
+    enabled: open,
+  })
+
   const vendorCommodities = vendorCommoditiesQuery.data ?? []
+  const allUserCommodities = userCommoditiesQuery.data ?? []
 
   useEffect(() => {
     if (!open) {
@@ -143,6 +160,28 @@ export function AddBillDialog({
     },
   })
 
+  const isAlreadyLinkedError = (error: unknown): boolean => {
+    if (!(error instanceof ApiRequestError)) {
+      return false
+    }
+
+    return error.status === 409 || /already linked/i.test(error.message)
+  }
+
+  const handleDraftCommodityModeChange = (draftId: string, mode: CommodityMode) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== draftId) return item
+        return {
+          ...item,
+          commodityMode: mode,
+          commodityId: mode === "existing" ? item.commodityId : "",
+          newCommodityName: mode === "new" ? item.newCommodityName : "",
+        }
+      })
+    )
+  }
+
   const handleDraftCommodityChange = (draftId: string, commodityId: string) => {
     const selectedCommodity = vendorCommodities.find((commodity) => commodity.id === commodityId)
 
@@ -151,9 +190,29 @@ export function AddBillDialog({
         if (item.id !== draftId) return item
         return {
           ...item,
+          commodityMode: "existing",
           commodityId,
-          name: selectedCommodity?.name ?? item.name,
+          newCommodityName: "",
           unit: selectedCommodity?.unit ?? item.unit,
+        }
+      })
+    )
+  }
+
+  const handleDraftNewCommodityChange = (draftId: string, commodityName: string) => {
+    const existingCommodity = allUserCommodities.find(
+      (commodity) => commodity.name.trim().toLowerCase() === commodityName.trim().toLowerCase()
+    )
+
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== draftId) return item
+        return {
+          ...item,
+          commodityMode: "new",
+          commodityId: "",
+          newCommodityName: commodityName,
+          unit: existingCommodity?.unit ?? item.unit,
         }
       })
     )
@@ -164,7 +223,7 @@ export function AddBillDialog({
   }
 
   const addDraftItem = () => {
-    setItems((prev) => [...prev, createDraftItem()])
+    setItems((prev) => [createDraftItem(), ...prev])
   }
 
   const removeDraftItem = (draftId: string) => {
@@ -176,44 +235,88 @@ export function AddBillDialog({
     })
   }
 
-  const buildCommodityPayload = (): AddBillCommodityPayload[] => {
-    return normalizedItems
-      .filter((item) => item.commodityId || item.suppliedAmmount || item.rate)
-      .map((item) => {
-        const commodity = vendorCommodities.find((entry) => entry.id === item.commodityId)
-        const unit = item.unit.trim() || commodity?.unit || "kg"
-        const name = commodity?.name ?? item.name.trim()
+  const buildCommodityPayload = async (): Promise<AddBillCommodityPayload[]> => {
+    const billItems = normalizedItems.filter(
+      (item) => item.commodityId || item.newCommodityName || item.suppliedAmmount || item.rate
+    )
 
-        return {
+    const commodityByName = new Map<string, BackendCommodity>()
+    allUserCommodities.forEach((commodity) => {
+      commodityByName.set(commodity.name.trim().toLowerCase(), commodity)
+    })
+
+    const payload: AddBillCommodityPayload[] = []
+
+    for (const item of billItems) {
+      if (item.commodityMode === "existing") {
+        const commodity = vendorCommodities.find((entry) => entry.id === item.commodityId)
+        payload.push({
           commodity_id: item.commodityId,
           supplied_ammount: Math.round(item.quantity),
-          unit,
+          unit: item.unit.trim() || commodity?.unit || "kg",
           cost: item.lineCost,
-          name,
+          name: commodity?.name ?? "",
+        })
+        continue
+      }
+
+      const desiredName = item.newCommodityName.trim()
+      const normalizedName = desiredName.toLowerCase()
+
+      let commodity = commodityByName.get(normalizedName)
+      if (!commodity) {
+        commodity = await addCommodity(userId, {
+          name: desiredName,
+          quantity: 0,
+          unit: item.unit.trim() || "kg",
+        })
+        commodityByName.set(normalizedName, commodity)
+      }
+
+      try {
+        await linkCommodityToVendor(userId, selectedVendorId, commodity.id)
+      } catch (error) {
+        if (!isAlreadyLinkedError(error)) {
+          throw error
         }
+      }
+
+      payload.push({
+        commodity_id: commodity.id,
+        supplied_ammount: Math.round(item.quantity),
+        unit: item.unit.trim() || commodity.unit || "kg",
+        cost: item.lineCost,
+        name: commodity.name,
       })
+    }
+
+    return payload
   }
 
-  const validateCommodityPayload = (payload: AddBillCommodityPayload[]): string | null => {
-    if (payload.length === 0) {
+  const validateDraftItems = (): string | null => {
+    const billItems = normalizedItems.filter(
+      (item) => item.commodityId || item.newCommodityName || item.suppliedAmmount || item.rate
+    )
+
+    if (billItems.length === 0) {
       return "Add at least one commodity item to this bill"
     }
 
-    for (const commodity of payload) {
-      if (!commodity.commodity_id) {
-        return "Each row must have a commodity selected"
+    for (const item of billItems) {
+      if (item.commodityMode === "existing" && !item.commodityId) {
+        return "Select an existing commodity for each active row"
       }
 
-      if (!Number.isFinite(commodity.supplied_ammount) || commodity.supplied_ammount <= 0) {
+      if (item.commodityMode === "new" && !item.newCommodityName.trim()) {
+        return "Select a commodity name in Create New mode"
+      }
+
+      if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
         return "Supplied amount must be greater than 0"
       }
 
-      if (!Number.isFinite(commodity.cost) || commodity.cost <= 0) {
+      if (!Number.isFinite(item.lineCost) || item.lineCost <= 0) {
         return "Rate must be greater than 0 for all rows"
-      }
-
-      if (!commodity.name.trim()) {
-        return "Commodity name is missing in one of the rows"
       }
     }
 
@@ -229,8 +332,7 @@ export function AddBillDialog({
       return
     }
 
-    const commodities = buildCommodityPayload()
-    const commodityValidationError = validateCommodityPayload(commodities)
+    const commodityValidationError = validateDraftItems()
 
     if (commodityValidationError) {
       setFormError(commodityValidationError)
@@ -247,15 +349,16 @@ export function AddBillDialog({
       return
     }
 
-    const payload: AddBillPayload = {
-      vendor_id: selectedVendorId,
-      total_amount: billTotalAmount,
-      paid_amount: paidAmountNumber,
-      bill_url: billUrl.trim().length > 0 ? billUrl.trim() : null,
-      commodities,
-    }
-
     try {
+      const commodities = await buildCommodityPayload()
+      const payload: AddBillPayload = {
+        vendor_id: selectedVendorId,
+        total_amount: billTotalAmount,
+        paid_amount: paidAmountNumber,
+        bill_url: billUrl.trim().length > 0 ? billUrl.trim() : null,
+        commodities,
+      }
+
       await createBillMutation.mutateAsync(payload)
     } catch (error) {
       const message =
@@ -276,6 +379,8 @@ export function AddBillDialog({
     }
     onOpenChange(nextOpen)
   }
+
+  const latestItemId = items[0]?.id ?? null
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
@@ -367,7 +472,7 @@ export function AddBillDialog({
                       <div>
                         <p className="text-sm font-semibold text-card-foreground">Bill Items</p>
                         <p className="text-xs text-muted-foreground">
-                          Select commodities linked to this vendor and enter quantity + rate.
+                          Use one guided flow per item: pick existing commodity or create a new one.
                         </p>
                       </div>
                       <Button
@@ -397,6 +502,12 @@ export function AddBillDialog({
                     <div className="space-y-3">
                       {normalizedItems.map((item, index) => {
                         const itemCostPreview = item.lineCost
+                        const isActiveItem = item.id === latestItemId
+                        const existingCommodity = vendorCommodities.find((entry) => entry.id === item.commodityId)
+                        const summaryCommodityName =
+                          item.commodityMode === "existing"
+                            ? existingCommodity?.name ?? "Not selected"
+                            : item.newCommodityName || "Not selected"
 
                         return (
                           <div
@@ -420,79 +531,162 @@ export function AddBillDialog({
                               </Button>
                             </div>
 
-                            <div className="grid gap-3 md:grid-cols-6">
-                              <div className="space-y-1 md:col-span-2">
-                                <Label className="text-xs text-muted-foreground">Commodity</Label>
-                                <Select
-                                  value={item.commodityId}
-                                  onValueChange={(value) => handleDraftCommodityChange(item.id, value)}
-                                  disabled={!selectedVendorId || vendorCommodities.length === 0}
-                                >
-                                  <SelectTrigger className="bg-secondary">
-                                    <SelectValue placeholder="Select commodity" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {vendorCommodities.map((commodity) => (
-                                      <SelectItem key={commodity.id} value={commodity.id}>
-                                        {renderCommodityOptionLabel(commodity)}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                            <div className="space-y-3">
+                              {isActiveItem ? (
+                                <div className="rounded-lg border border-border/50 bg-card/45 p-3">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Assign Commodity
+                                  </p>
 
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Quantity</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="1"
-                                  value={item.suppliedAmmount}
-                                  onChange={(event) =>
-                                    updateDraftItem(item.id, (draft) => ({
-                                      ...draft,
-                                      suppliedAmmount: event.target.value,
-                                    }))
-                                  }
-                                  className="bg-secondary font-mono"
-                                />
-                              </div>
+                                  <div className="mt-2 grid grid-cols-2 gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => handleDraftCommodityModeChange(item.id, "existing")}
+                                      className={cn(
+                                        "border-border/60",
+                                        item.commodityMode === "existing"
+                                          ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+                                          : "bg-secondary"
+                                      )}
+                                    >
+                                      Use Existing
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => handleDraftCommodityModeChange(item.id, "new")}
+                                      className={cn(
+                                        "border-border/60",
+                                        item.commodityMode === "new"
+                                          ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
+                                          : "bg-secondary"
+                                      )}
+                                    >
+                                      Create New
+                                    </Button>
+                                  </div>
 
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Unit</Label>
-                                <Input
-                                  value={item.unit}
-                                  onChange={(event) =>
-                                    updateDraftItem(item.id, (draft) => ({
-                                      ...draft,
-                                      unit: event.target.value,
-                                    }))
-                                  }
-                                  className="bg-secondary"
-                                />
-                              </div>
+                                  {item.commodityMode === "existing" ? (
+                                    <div className="mt-3 space-y-1">
+                                      <Label className="text-xs text-muted-foreground">Existing Commodity</Label>
+                                      <Select
+                                        value={item.commodityId || "none"}
+                                        onValueChange={(value) =>
+                                          handleDraftCommodityChange(item.id, value === "none" ? "" : value)
+                                        }
+                                        disabled={!selectedVendorId || vendorCommodities.length === 0}
+                                      >
+                                        <SelectTrigger className="bg-secondary">
+                                          <SelectValue
+                                            placeholder={
+                                              vendorCommodities.length === 0
+                                                ? "No linked commodities"
+                                                : "Select commodity"
+                                            }
+                                          />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="none">Do not assign now</SelectItem>
+                                          {vendorCommodities.map((commodity) => (
+                                            <SelectItem key={commodity.id} value={commodity.id}>
+                                              {renderCommodityOptionLabel(commodity)}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-3 space-y-3">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">New Commodity</Label>
+                                        <Input
+                                          value={item.newCommodityName}
+                                          onChange={(event) =>
+                                            handleDraftNewCommodityChange(item.id, event.target.value)
+                                          }
+                                          placeholder="Type commodity name"
+                                          className="bg-secondary"
+                                        />
+                                      </div>
 
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Rate (₹)</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="1"
-                                  value={item.rate}
-                                  onChange={(event) =>
-                                    updateDraftItem(item.id, (draft) => ({
-                                      ...draft,
-                                      rate: event.target.value,
-                                    }))
-                                  }
-                                  className="bg-secondary font-mono"
-                                />
-                              </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">Unit</Label>
+                                        <Select
+                                          value={item.unit}
+                                          onValueChange={(value) =>
+                                            updateDraftItem(item.id, (draft) => ({
+                                              ...draft,
+                                              unit: value,
+                                            }))
+                                          }
+                                        >
+                                          <SelectTrigger className="bg-secondary">
+                                            <SelectValue placeholder="Select unit" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {UNIT_OPTIONS.map((unit) => (
+                                              <SelectItem key={unit} value={unit}>
+                                                {unit}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
 
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Line Total</Label>
-                                <div className="rounded-md border border-border/50 bg-secondary px-3 py-2 font-mono text-sm text-amber-300">
-                                  {formatCurrency(itemCostPreview)}
+                                      <p className="text-[11px] text-muted-foreground">
+                                        If missing, commodity will be created with opening stock 0 and auto-linked to this vendor.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-xs text-muted-foreground">
+                                  <span className="font-medium text-card-foreground">Commodity:</span>{" "}
+                                  {summaryCommodityName} ({item.unit})
+                                </div>
+                              )}
+
+                              <div className="grid gap-3 md:grid-cols-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={item.suppliedAmmount}
+                                    onChange={(event) =>
+                                      updateDraftItem(item.id, (draft) => ({
+                                        ...draft,
+                                        suppliedAmmount: event.target.value,
+                                      }))
+                                    }
+                                    className="bg-secondary font-mono"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Rate (₹)</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={item.rate}
+                                    onChange={(event) =>
+                                      updateDraftItem(item.id, (draft) => ({
+                                        ...draft,
+                                        rate: event.target.value,
+                                      }))
+                                    }
+                                    className="bg-secondary font-mono"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Line Total</Label>
+                                  <div className="rounded-md border border-border/50 bg-secondary px-3 py-2 font-mono text-sm text-amber-300">
+                                    {formatCurrency(itemCostPreview)}
+                                  </div>
                                 </div>
                               </div>
                             </div>
