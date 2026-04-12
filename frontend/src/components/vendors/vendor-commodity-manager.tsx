@@ -5,7 +5,6 @@ import { Link2, PackagePlus, Unlink2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   addCommodity,
   ApiRequestError,
@@ -235,30 +234,45 @@ export function VendorCommodityManager({
           </p>
         </div>
 
-        <div className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1">
-            <Select value={selectedCommodityId} onValueChange={setSelectedCommodityId}>
-              <SelectTrigger className="w-full min-w-0 bg-secondary">
-                <SelectValue
-                  placeholder={loading ? "Loading commodities..." : "Select commodity"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {availableCommodities.map((commodity) => (
-                  <SelectItem key={commodity.id} value={String(commodity.id)}>
-                    {commodity.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {loading && (
+              <p className="rounded-md border border-border/50 bg-secondary/60 px-2 py-1 text-xs text-muted-foreground">
+                Loading commodities...
+              </p>
+            )}
+            {!loading &&
+              availableCommodities.map((commodity) => (
+                <Button
+                  key={commodity.id}
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedCommodityId(String(commodity.id))
+                    if (error) setError(null)
+                  }}
+                  className={
+                    selectedCommodityId === String(commodity.id)
+                      ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
+                      : "border-border/60 bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                  }
+                >
+                  {commodity.name}
+                </Button>
+              ))}
+            {!loading && availableCommodities.length === 0 && (
+              <p className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-1 text-xs text-emerald-300">
+                All commodities are already linked.
+              </p>
+            )}
           </div>
           <Button
             type="button"
             onClick={handleAddCommodity}
             disabled={loading || adding || availableCommodities.length === 0}
-            className="bg-emerald-600 text-white sm:w-auto hover:bg-emerald-700"
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            {adding ? "Adding..." : "Assign"}
+            {adding ? "Adding..." : "Assign Selected Commodity"}
           </Button>
         </div>
       </div>
@@ -305,16 +319,27 @@ export function VendorCommodityManager({
           </div>
           <div className="min-w-0 space-y-1 md:col-span-1">
             <Label className="text-xs text-muted-foreground">Unit</Label>
-            <Select value={newCommodityUnit} onValueChange={setNewCommodityUnit}>
-              <SelectTrigger className="w-full bg-secondary">
-                <SelectValue placeholder="Select unit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="kg">kg</SelectItem>
-                <SelectItem value="liter">liters</SelectItem>
-                <SelectItem value="pcs">pcs</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "kg", value: "kg" },
+                { label: "liters", value: "liter" },
+                { label: "pcs", value: "pcs" },
+              ].map((unit) => (
+                <Button
+                  key={unit.value}
+                  type="button"
+                  variant="outline"
+                  onClick={() => setNewCommodityUnit(unit.value)}
+                  className={
+                    newCommodityUnit === unit.value
+                      ? "border-blue-500/50 bg-blue-500/15 text-blue-300 hover:bg-blue-500/20"
+                      : "border-border/60 bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                  }
+                >
+                  {unit.label}
+                </Button>
+              ))}
+            </div>
           </div>
           <div className="flex items-end md:col-span-1">
             <Button
@@ -353,12 +378,6 @@ export function VendorCommodityManager({
             ))}
           </div>
         </div>
-      )}
-
-      {!loading && availableCommodities.length === 0 && (
-        <p className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-1 text-xs text-emerald-300">
-          All commodities are already linked.
-        </p>
       )}
 
       {error && (

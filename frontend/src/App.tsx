@@ -5,6 +5,7 @@ import SettingsPage from "./pages/SettingsPage"
 import StockPage from "@/pages/StockPage"
 import SuppliesPage from "@/pages/SuppliesPage"
 import VendorsPage from "@/pages/VendorsPage"
+import DailyLogsPage from "@/pages/DailyLogsPage"
 import LoginPage from "@/pages/LoginPage"
 import SignupPage from "@/pages/SignupPage"
 import { useAuth } from "@/context/AuthContext"
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/vendors" element={<VendorsPage />} />
         <Route path="/stock" element={<StockPage />} />
         <Route path="/payments" element={<PaymentsPage />} />
+        <Route path="/daily-logs" element={<DailyLogsPage />} />
         <Route path="/supplies" element={<SuppliesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

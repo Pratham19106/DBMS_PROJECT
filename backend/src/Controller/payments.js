@@ -7,12 +7,7 @@ const {
     getBillForUpdateQuery,
     updateBillAfterPaymentQuery
 } = require('../services/paymentQueries')
-
-const determineBillStatus = (paidAmount, totalAmount) => {
-    if (paidAmount <= 0) return 'unpaid'
-    if (paidAmount >= totalAmount) return 'paid'
-    return 'partial'
-}
+const { resolveBillStatusByAmounts } = require('../utils/billStatus')
 
 const createPayment = async (req, res, next) => {
     const client = await pool.connect()
@@ -42,7 +37,7 @@ const createPayment = async (req, res, next) => {
 
         const bill = billResult.rows[0]
         const nextPaidAmount = Number(bill.paid_amount) + numericAmount
-        const nextStatus = determineBillStatus(nextPaidAmount, Number(bill.total_amount))
+        const nextStatus = await resolveBillStatusByAmounts(nextPaidAmount, Number(bill.total_amount))
 
         const paymentResult = await client.query(createPaymentQuery, [
             userId,

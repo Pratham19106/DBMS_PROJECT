@@ -11,12 +11,7 @@ const {
     getBillCommoditiesQuery,
     updateCommodityQuantityQuery
 } = require('../services/billQueries')
-
-const determineBillStatus = (paid_amount, total_amount) => {
-    if (paid_amount <= 0) return 'unpaid'
-    if (paid_amount >= total_amount) return 'paid'
-    return 'partial'
-}
+const { resolveBillStatusByAmounts } = require('../utils/billStatus')
 
 const getBill = async (req, res, next) => {
     try {
@@ -69,7 +64,7 @@ const addNewBill = async (req, res, next) => {
             return next(error)
         }
 
-        const status = determineBillStatus(paid_amount, total_amount)
+        const status = await resolveBillStatusByAmounts(paid_amount, total_amount)
 
         await client.query('BEGIN')
 
@@ -139,7 +134,7 @@ const updateBill = async (req, res, next) => {
         paid_amount = paid_amount ?? fetchBillData.rows[0].paid_amount
         bill_url = bill_url ?? fetchBillData.rows[0].bill_url
 
-        const status = determineBillStatus(paid_amount, fetchBillData.rows[0].total_amount)
+        const status = await resolveBillStatusByAmounts(paid_amount, fetchBillData.rows[0].total_amount)
 
         const result = await pool.query(updateBillQuery, [paid_amount, status, bill_url, billId])
 

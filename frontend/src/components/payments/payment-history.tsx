@@ -30,8 +30,18 @@ import {
   getVendorPayments,
   getVendors,
 } from "@/lib/api"
+import { getReceivedLogs, type ReceivedDailyLog } from "@/lib/daily-logs"
 
 const PAYMENT_HISTORY_QUERY_KEY = "payment-logs"
+
+type UnifiedPaymentEntry = {
+  id: string
+  payment_date?: string
+  vendor_id: string
+  bill_id: string
+  amount: number
+  entry_type: "paid" | "received"
+}
 
 function asNumber(value: number | string): number {
   const parsed = typeof value === "number" ? value : Number(value)
@@ -74,14 +84,55 @@ export function PaymentHistory() {
     queryKey: [PAYMENT_HISTORY_QUERY_KEY, userId, selectedVendor, selectedBill],
     queryFn: async () => {
       if (selectedBill !== "all") {
-        return getBillPayments(userId, selectedBill)
+        const paidEntries = await getBillPayments(userId, selectedBill)
+        return paidEntries.map<UnifiedPaymentEntry>((entry) => ({
+          id: `paid-${entry.id}`,
+          payment_date: entry.payment_date,
+          vendor_id: entry.vendor_id,
+          bill_id: entry.bill_id,
+          amount: asNumber(entry.amount),
+          entry_type: "paid",
+        }))
       }
 
       if (selectedVendor !== "all") {
-        return getVendorPayments(userId, selectedVendor)
+        const paidEntries = await getVendorPayments(userId, selectedVendor)
+        return paidEntries.map<UnifiedPaymentEntry>((entry) => ({
+          id: `paid-${entry.id}`,
+          payment_date: entry.payment_date,
+          vendor_id: entry.vendor_id,
+          bill_id: entry.bill_id,
+          amount: asNumber(entry.amount),
+          entry_type: "paid",
+        }))
       }
 
-      return getPayments(userId)
+      const [paidEntries, receivedEntries] = await Promise.all([
+        getPayments(userId),
+        Promise.resolve(getReceivedLogs(userId)),
+      ])
+
+      const paid = paidEntries.map<UnifiedPaymentEntry>((entry) => ({
+        id: `paid-${entry.id}`,
+        payment_date: entry.payment_date,
+        vendor_id: entry.vendor_id,
+        bill_id: entry.bill_id,
+        amount: asNumber(entry.amount),
+        entry_type: "paid",
+      }))
+
+      const received = receivedEntries.map<UnifiedPaymentEntry>((entry: ReceivedDailyLog) => ({
+        id: `received-${entry.id}`,
+        payment_date: entry.date,
+        vendor_id: "received",
+        bill_id: "-",
+        amount: asNumber(entry.amount),
+        entry_type: "received",
+      }))
+
+      return [...paid, ...received].sort(
+        (a, b) => new Date(b.payment_date ?? "").getTime() - new Date(a.payment_date ?? "").getTime()
+      )
     },
   })
 
@@ -191,11 +242,34 @@ export function PaymentHistory() {
                 >
                   <TableCell className="text-muted-foreground">{formatDate(log.payment_date)}</TableCell>
                   <TableCell className="font-medium text-card-foreground">
-                    {vendorNameById.get(log.vendor_id) ?? `Vendor #${log.vendor_id}`}
+                    {log.entry_type === "received"
+                      ? "Cash/Customer"
+                      : (vendorNameById.get(log.vendor_id) ?? `Vendor #${log.vendor_id}`)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">#{log.bill_id}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold text-emerald-400">
-                    ₹{asNumber(log.amount).toLocaleString("en-IN")}
+                  <TableCell className="text-muted-foreground">
+                    {log.entry_type === "received" ? "-" : `#${log.bill_id}`}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Badge
+                        className={cn(
+                          "border",
+                          log.entry_type === "received"
+                            ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
+                            : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                        )}
+                      >
+                        {log.entry_type === "received" ? "Received" : "Paid"}
+                      </Badge>
+                      <span
+                        className={cn(
+                          "font-mono font-semibold",
+                          log.entry_type === "received" ? "text-cyan-300" : "text-rose-300"
+                        )}
+                      >
+                        ₹{asNumber(log.amount).toLocaleString("en-IN")}
+                      </span>
+                    </div>
                   </TableCell>
                 </TableRow>
               )

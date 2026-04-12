@@ -6,6 +6,7 @@ import {
   Store,
   Package,
   Wallet,
+  ClipboardList,
   Truck,
   Settings,
   LogOut,
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/vendors", label: "Vendors", icon: Store },
   { href: "/stock", label: "Stock & Commodities", icon: Package },
   { href: "/payments", label: "Payments", icon: Wallet },
+  { href: "/daily-logs", label: "Daily Logs", icon: ClipboardList },
   { href: "/supplies", label: "Supplies", icon: Truck },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
