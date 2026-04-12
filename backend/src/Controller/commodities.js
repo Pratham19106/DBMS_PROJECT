@@ -1,17 +1,11 @@
 const pool = require('../db/db');
-const { getAllCommoditiesQuery, getCommodityQuery, addNewCommodityQuery, deleteCommodityQuery } = require('../services/commodityQuery');
+const { getAllCommoditiesQuery, getCommodityQuery, addNewCommodityQuery, updateCommodityQuery, deleteCommodityQuery } = require('../services/commodityQuery');
 
 
 const getAllCommodies = async (req, res, next) => {
     try {
         const userId = req.params.userId;
         const result = await pool.query(getAllCommoditiesQuery, [userId])
-
-        if (result.rows.length === 0) {
-            const error = new Error("No commodities found for this user")
-            error.status = 404
-            return next(error)
-        }
 
         return res.status(200).json({
             commodities: result.rows
@@ -44,20 +38,26 @@ const addNewCommodity = async (req, res, next) => {
         const userId = req.params.userId
         const { name, quantity, unit } = req.body
 
+        if (!name || quantity == null || !unit) {
+            const error = new Error('name, quantity and unit are required')
+            error.status = 400
+            return next(error)
+        }
+
         const normalizedName = name.toLowerCase();
 
         const ifExist = await pool.query(
-         'select id from commodities where name = $1 and user_id = $2',
-         [normalizedName, userId]
-         );
+            'select id from commodities where name = $1 and user_id = $2',
+            [normalizedName, userId]
+        );
 
-         if (ifExist.rows.length > 0) {
-         const error = new Error("Commodity already exist");
-           error.status = 409;
-          return next(error);
-         }
+        if (ifExist.rows.length > 0) {
+            const error = new Error("Commodity already exist");
+            error.status = 409;
+            return next(error);
+        }
 
-       const result = await pool.query(addNewCommodityQuery, [normalizedName, quantity, unit, userId]);
+        const result = await pool.query(addNewCommodityQuery, [normalizedName, quantity, unit, userId]);
         if (result.rows.length === 0) {
             const error = new Error("Failed to add commodity")
             error.status = 500
@@ -69,7 +69,7 @@ const addNewCommodity = async (req, res, next) => {
         })
 
     } catch (err) {
-        next(err)
+        return next(err)
     }
 }
 const deleteCommodity = async (req, res, next) => {
@@ -94,6 +94,13 @@ const updateCommodity = async (req, res, next) => {
     try {
         const id = req.params.id;
         const { quantity } = req.body
+
+        if (quantity == null) {
+            const error = new Error('quantity is required')
+            error.status = 400
+            return next(error)
+        }
+
         const result = await pool.query(updateCommodityQuery, [quantity, id])
         if (result.rowCount === 0) {
             const error = new Error("Commodity not found")

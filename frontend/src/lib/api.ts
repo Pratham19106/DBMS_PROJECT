@@ -13,14 +13,14 @@ export class ApiRequestError extends Error {
 }
 
 export type BackendVendor = {
-  id: number
+  id: string
   user_id: string
   name: string
   phone_number: string
 }
 
 export type BackendCommodity = {
-  id: number
+  id: string
   user_id: string
   name: string
   quantity: number
@@ -28,8 +28,8 @@ export type BackendCommodity = {
 }
 
 export type BackendBill = {
-  id: number
-  vendor_id: number
+  id: string
+  vendor_id: string
   user_id: string
   total_amount: number | string
   paid_amount: number | string
@@ -38,13 +38,36 @@ export type BackendBill = {
 }
 
 export type BackendPaymentLog = {
-  id: number
+  id: string
   user_id: string
-  vendor_id: number
-  bill_id: number
+  vendor_id: string
+  bill_id: string
   amount_paid: number | string
   payment_mode: string
   payment_date?: string
+}
+
+export type BackendPaymentSuggestionVendor = {
+  id: string
+  name: string
+  phone_number: string
+  pending_amount: number | string
+  oldest_bill_date: string | null
+  unpaid_bill_count: number | string
+}
+
+export type AddPaymentLogPayload = {
+  vendor_id: string
+  bill_id: string
+  amount_paid: number
+  payment_mode: string
+}
+
+export type AddPaymentLogResponse = {
+  success: boolean
+  msg: string
+  payment_log: BackendPaymentLog
+  bill: BackendBill
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000"
@@ -124,7 +147,7 @@ export async function addVendor(
 
 export async function updateVendor(
   userId: string,
-  vendorId: number,
+  vendorId: string,
   payload: { name?: string; phone_number?: string }
 ): Promise<void> {
   await request<{ success: boolean; msg: string }>(`/users/${userId}/vendors/${vendorId}`, {
@@ -133,26 +156,81 @@ export async function updateVendor(
   })
 }
 
-export async function getVendorCommodities(userId: string, vendorId: number): Promise<BackendCommodity[]> {
+export async function deleteVendor(userId: string, vendorId: string): Promise<void> {
+  await request<{ success: boolean; msg: string }>(`/users/${userId}/vendors/${vendorId}`, {
+    method: "DELETE",
+  })
+}
+
+export async function getVendorCommodities(userId: string, vendorId: string): Promise<BackendCommodity[]> {
   return getListOrEmpty(async () => {
     const data = await request<{ commodities: BackendCommodity[] }>(`/users/${userId}/vendors/${vendorId}/commodities`)
     return data.commodities
   })
 }
 
-export async function getVendorBills(userId: string, vendorId: number): Promise<BackendBill[]> {
+export async function getVendorBills(userId: string, vendorId: string): Promise<BackendBill[]> {
   return getListOrEmpty(async () => {
     const data = await request<{ bills: BackendBill[] }>(`/users/${userId}/vendors/${vendorId}/bills`)
     return data.bills
   })
 }
 
-export async function getVendorPaymentLogs(userId: string, vendorId: number): Promise<BackendPaymentLog[]> {
+export async function getVendorPaymentLogs(userId: string, vendorId: string): Promise<BackendPaymentLog[]> {
   return getListOrEmpty(async () => {
     const data = await request<{ payment_logs: BackendPaymentLog[] }>(
       `/users/${userId}/vendors/${vendorId}/payment-logs`
     )
     return data.payment_logs
+  })
+}
+
+export async function getPaymentLogs(userId: string): Promise<BackendPaymentLog[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{ payment_logs: BackendPaymentLog[] }>(`/users/${userId}/payment-logs`)
+    return data.payment_logs
+  })
+}
+
+export async function getBillPaymentLogs(userId: string, billId: string): Promise<BackendPaymentLog[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{ payment_logs: BackendPaymentLog[] }>(
+      `/users/${userId}/bills/${billId}/payment-logs`
+    )
+    return data.payment_logs
+  })
+}
+
+export async function addPaymentLog(
+  userId: string,
+  payload: AddPaymentLogPayload
+): Promise<AddPaymentLogResponse> {
+  return request<AddPaymentLogResponse>(`/users/${userId}/payment-logs`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getPaymentSuggestion(
+  userId: string
+): Promise<BackendPaymentSuggestionVendor[]> {
+  return getListOrEmpty(async () => {
+    const data = await request<{
+      suggested_vendor?: BackendPaymentSuggestionVendor
+      all_pending_vendors?: BackendPaymentSuggestionVendor[]
+      vendors?: BackendPaymentSuggestionVendor[]
+      msg?: string
+    }>(`/users/${userId}/payment-suggestion`)
+
+    if (Array.isArray(data.all_pending_vendors)) {
+      return data.all_pending_vendors
+    }
+
+    if (Array.isArray(data.vendors)) {
+      return data.vendors
+    }
+
+    return []
   })
 }
 
@@ -163,7 +241,22 @@ export async function getCommodities(userId: string): Promise<BackendCommodity[]
   })
 }
 
-export async function getCommodityVendors(userId: string, commodityId: number): Promise<BackendVendor[]> {
+export async function addCommodity(
+  userId: string,
+  payload: { name: string; quantity: number; unit: string }
+): Promise<BackendCommodity> {
+  const data = await request<{ success: boolean; commodity: BackendCommodity }>(
+    `/users/${userId}/commodities`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  )
+
+  return data.commodity
+}
+
+export async function getCommodityVendors(userId: string, commodityId: string): Promise<BackendVendor[]> {
   return getListOrEmpty(async () => {
     const data = await request<{ vendors: BackendVendor[] }>(
       `/users/${userId}/commodities/${commodityId}/vendors`
@@ -174,11 +267,32 @@ export async function getCommodityVendors(userId: string, commodityId: number): 
 
 export async function linkCommodityToVendor(
   userId: string,
-  vendorId: number,
-  commodityId: number
+  vendorId: string,
+  commodityId: string
 ): Promise<void> {
+  const normalizedCommodityId = String(commodityId ?? "").trim()
+  if (!normalizedCommodityId) {
+    throw new Error(`commodityId is required (received: ${String(commodityId)})`)
+  }
+
   await request<{ success: boolean; msg: string }>(`/users/${userId}/vendors/${vendorId}/commodities`, {
     method: "POST",
-    body: JSON.stringify({ commodity_id: commodityId }),
+    body: JSON.stringify({
+      commodity_id: normalizedCommodityId,
+      commodityId: normalizedCommodityId,
+    }),
   })
+}
+
+export async function unlinkCommodityFromVendor(
+  userId: string,
+  vendorId: string,
+  commodityId: string
+): Promise<void> {
+  await request<{ success: boolean; msg: string }>(
+    `/users/${userId}/vendors/${vendorId}/commodities/${commodityId}`,
+    {
+      method: "DELETE",
+    }
+  )
 }

@@ -12,21 +12,19 @@ import { Truck, Wallet } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import { recentTransactions, cashFlowData } from "@/lib/mock-data"
+import type { CashFlowPoint, DashboardTransaction } from "./dashboard-data"
 
-const last5Supplies = recentTransactions
-  .filter((t) => t.type === "supply")
-  .slice(0, 5)
-const last5Payments = recentTransactions
-  .filter((t) => t.type === "payment")
-  .slice(0, 5)
+const MAX_TRANSACTIONS = 8
 
-// Merge and sort all transactions
-const allTransactions = [...last5Supplies, ...last5Payments].sort(
-  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-)
+type RecentTransactionsProps = {
+  transactions: DashboardTransaction[]
+  cashFlowData: CashFlowPoint[]
+  loading?: boolean
+}
 
-export function RecentTransactions() {
+export function RecentTransactions({ transactions, cashFlowData, loading = false }: RecentTransactionsProps) {
+  const boundedTransactions = transactions.slice(0, MAX_TRANSACTIONS)
+
   return (
     <Card className="flex h-full flex-col border-border/50 bg-card">
       <CardHeader className="pb-2">
@@ -98,7 +96,7 @@ export function RecentTransactions() {
         {/* Transaction List */}
         <ScrollArea className="flex-1">
           <div className="space-y-3">
-            {allTransactions.map((transaction) => (
+            {boundedTransactions.map((transaction) => (
               <div
                 key={transaction.id}
                 className="flex items-center gap-3 rounded-lg border border-border/50 bg-secondary/30 p-3 transition-colors hover:border-white/10"
@@ -123,8 +121,8 @@ export function RecentTransactions() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {transaction.type === "supply"
-                      ? `${transaction.commodity} - ${transaction.quantity} units`
-                      : `Payment via ${transaction.mode}`}
+                      ? `${transaction.commodity ?? "Supply"}${transaction.quantity ? ` - ${transaction.quantity} units` : ""}`
+                      : `Payment via ${transaction.mode ?? "Unknown"}`}
                   </p>
                 </div>
                 <div className="text-right">
@@ -148,6 +146,12 @@ export function RecentTransactions() {
                 </div>
               </div>
             ))}
+
+            {!loading && boundedTransactions.length === 0 && (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                No recent transactions found.
+              </p>
+            )}
           </div>
         </ScrollArea>
       </CardContent>

@@ -39,7 +39,7 @@ It is written for frontend integration and reflects current runtime behavior, in
 ### 3.1 Response style
 
 - Success payload keys vary by endpoint (`user`, `users`, `vendor`, `vendors`, `bill`, `bills`, etc.).
-- Many list endpoints return `404` when empty instead of returning `200` with `[]`.
+- List endpoints return `200` with empty arrays when no rows are found.
 
 ### 3.2 Error handling
 
@@ -154,10 +154,10 @@ Success `201`:
 
 Notes:
 - Password is hashed here using `bcryptjs`.
-- Duplicate check is by both `email` and `name` in current logic.
+- Duplicate check is by `email`.
 
 Possible errors:
-- `400` user already registered
+- `409` user already registered
 - `400` bad request
 
 ---
@@ -208,7 +208,7 @@ Success `200`:
 ```
 
 Error:
-- `404` no users found
+- No error for empty list; response is `200` with `users: []`
 
 ---
 
@@ -252,7 +252,7 @@ Possible errors:
 - `400` bad request
 
 Important:
-- This path stores password as provided (no hashing in controller).
+- This path hashes password using `bcryptjs` before insert.
 
 ---
 
@@ -269,10 +269,7 @@ Request body (all optional):
 }
 ```
 
-Current controller attempts to respond with status `204` and JSON body.
-
-Known issue:
-- Logic bug in controller can incorrectly trigger not found path.
+Controller responds with status `200` and includes the updated `user` object.
 
 ---
 

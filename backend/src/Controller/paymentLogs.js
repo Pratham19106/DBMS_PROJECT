@@ -1,5 +1,4 @@
 const pool = require('../db/db')
-const { getBillQuery } = require('../services/billQueries')
 const {
     getAllPaymentLogsForUserQuery,
     getPaymentLogsForVendorQuery,
@@ -20,12 +19,6 @@ const getAllPaymentLogsForUser = async (req, res, next) => {
         const userId = req.params.userId;
         const result = await pool.query(getAllPaymentLogsForUserQuery, [userId])
 
-        if (result.rows.length === 0) {
-            const error = new Error("No payment logs found for this user")
-            error.status = 404
-            return next(error)
-        }
-
         return res.status(200).json({ payment_logs: result.rows })
     } catch (err) {
         return next(err)
@@ -37,12 +30,6 @@ const getPaymentLogsForVendor = async (req, res, next) => {
         const { userId, vendorId } = req.params;
         const result = await pool.query(getPaymentLogsForVendorQuery, [vendorId, userId])
 
-        if (result.rows.length === 0) {
-            const error = new Error("No payment logs found for this vendor")
-            error.status = 404
-            return next(error)
-        }
-
         return res.status(200).json({ payment_logs: result.rows })
     } catch (err) {
         return next(err)
@@ -53,12 +40,6 @@ const getPaymentLogsForBill = async (req, res, next) => {
     try {
         const billId = req.params.billId;
         const result = await pool.query(getPaymentLogsForBillQuery, [billId])
-
-        if (result.rows.length === 0) {
-            const error = new Error("No payment logs found for this bill")
-            error.status = 404
-            return next(error)
-        }
 
         return res.status(200).json({ payment_logs: result.rows })
     } catch (err) {
@@ -72,31 +53,37 @@ const addPaymentLog = async (req, res, next) => {
         const userId = req.params.userId;
         const { vendor_id, bill_id, amount_paid, payment_mode } = req.body;
 
-        if (!vendor_id || !bill_id || !amount_paid || !payment_mode) {
+        if (!vendor_id || !bill_id || amount_paid == null || amount_paid <= 0 || !payment_mode) {
             const error = new Error('vendor_id, bill_id, amount_paid and payment_mode are required')
             error.status = 400
             return next(error)
         }
 
-        const fetchBillData = await client.query(getBillQuery, [bill_id])
+        await client.query('BEGIN')
+
+        const fetchBillData = await client.query(
+            'select * from bills where id = $1 for update',
+            [bill_id]
+        )
         if (fetchBillData.rows.length === 0) {
-            const error = new Error("Bill not found")
-            error.status = 404
-            return next(error)
+            throw Object.assign(new Error('Bill not found'), { status: 404 })
         }
 
         const bill = fetchBillData.rows[0]
-        const newPaidAmount = bill.paid_amount + amount_paid
-        const newStatus = determineBillStatus(newPaidAmount, bill.total_amount)
+        const paidAmount = Number(amount_paid)
+        if (Number.isNaN(paidAmount)) {
+            throw Object.assign(new Error('amount_paid must be a valid number'), { status: 400 })
+        }
 
-        await client.query('BEGIN')
+        const newPaidAmount = Number(bill.paid_amount) + paidAmount
+        const newStatus = determineBillStatus(newPaidAmount, Number(bill.total_amount))
 
         const logResult = await client.query(addPaymentLogQuery, [
-            userId, vendor_id, bill_id, amount_paid, payment_mode
+            userId, vendor_id, bill_id, paidAmount, payment_mode
         ])
 
         const updatedBill = await client.query(updateBillAfterPaymentQuery, [
-            amount_paid, newStatus, bill_id
+            paidAmount, newStatus, bill_id
         ])
 
         await client.query('COMMIT')
@@ -108,7 +95,7 @@ const addPaymentLog = async (req, res, next) => {
             bill: updatedBill.rows[0]
         })
     } catch (err) {
-        await client.query('ROLLBACK')
+        await client.query('ROLLBACK').catch(() => { })
         if (err.code === '23503') {
             const error = new Error('User, vendor or bill does not exist')
             error.status = 400

@@ -16,7 +16,9 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { restaurantSettings } from "@/lib/mock-data"
+
+const ownerName = String(import.meta.env.VITE_OWNER_NAME ?? "Restaurant Owner")
+const restaurantName = String(import.meta.env.VITE_RESTAURANT_NAME ?? "SupplySync Account")
 
 interface AppSidebarProps {
   collapsed: boolean
@@ -98,18 +100,18 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         <div className="border-t border-border/50 p-4">
           <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
             <Avatar className="h-9 w-9 border border-border/50">
-              <AvatarImage src="/placeholder-avatar.jpg" alt={restaurantSettings.ownerName} />
+              <AvatarImage src="/placeholder-avatar.jpg" alt={ownerName} />
               <AvatarFallback className="bg-secondary text-secondary-foreground">
-                {restaurantSettings.ownerName.split(' ').map(n => n[0]).join('')}
+                {ownerName.split(" ").map((namePart) => namePart[0]).join("")}
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="flex-1 overflow-hidden">
                 <p className="truncate text-sm font-medium text-foreground">
-                  {restaurantSettings.ownerName}
+                  {ownerName}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {restaurantSettings.name}
+                  {restaurantName}
                 </p>
               </div>
             )}

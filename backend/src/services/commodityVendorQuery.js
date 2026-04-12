@@ -10,7 +10,7 @@ RETURNING *
 `
 
 const deleteVendorCommodityQuery = `
-DELETE vendor_commodity WHERE vendor_id = $1 and commodity_id = $2
+DELETE FROM vendor_commodity WHERE vendor_id = $1 and commodity_id = $2
 RETURNING  *
 `
 module.exports = {

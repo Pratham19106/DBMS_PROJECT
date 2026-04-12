@@ -6,14 +6,17 @@ where id = $1
 const getBillWithItemsQuery = `
 select
     b.*,
-    json_agg(
-        json_build_object(
-            'commodity_id', bc.commodity_id,
-            'name', bc.name,
-            'supplied_ammount', bc.supplied_ammount,
-            'unit', bc.unit,
-            'cost', bc.cost
-        )
+    coalesce(
+        json_agg(
+            json_build_object(
+                'commodity_id', bc.commodity_id,
+                'name', bc.name,
+                'supplied_ammount', bc.supplied_ammount,
+                'unit', bc.unit,
+                'cost', bc.cost
+            )
+        ) filter (where bc.bill_id is not null),
+        '[]'::json
     ) as items
 from bills b
 left join bill_commodity bc on b.id = bc.bill_id

@@ -5,9 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { smartBuyRecommendation, smartPayRecommendation } from "@/lib/mock-data"
+import type { SmartBuyRecommendation, SmartPayRecommendation } from "./dashboard-data"
 
-export function SmartRecommendations() {
+type SmartRecommendationsProps = {
+  buyRecommendation: SmartBuyRecommendation
+  payRecommendation: SmartPayRecommendation
+  loading?: boolean
+}
+
+export function SmartRecommendations({
+  buyRecommendation,
+  payRecommendation,
+  loading = false,
+}: SmartRecommendationsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Smart Buy Recommendation */}
@@ -30,15 +40,15 @@ export function SmartRecommendations() {
               <p className="text-sm text-muted-foreground">
                 Stock of{" "}
                 <span className="font-semibold text-amber-500">
-                  {smartBuyRecommendation.commodity}
+                    {buyRecommendation?.commodity ?? "-"}
                 </span>{" "}
-                is running low ({smartBuyRecommendation.stockLevel}% remaining)
+                  is running low ({buyRecommendation?.stockLevel ?? 0} {buyRecommendation?.unit ?? "units"} left)
               </p>
             </div>
             <p className="text-card-foreground">
               Recommended vendor:{" "}
               <span className="font-semibold text-primary">
-                {smartBuyRecommendation.vendor.name}
+                  {buyRecommendation?.vendorName ?? "No recommendation yet"}
               </span>
             </p>
           </div>
@@ -48,10 +58,10 @@ export function SmartRecommendations() {
             className="border-amber-500/30 bg-amber-500/10 text-amber-400"
           >
             <TrendingDown className="mr-1.5 h-3 w-3" />
-            {smartBuyRecommendation.reason}
+            {buyRecommendation?.reason ?? "Add more stock and vendor links to unlock this insight"}
           </Badge>
 
-          <Button className="w-full bg-amber-600 text-white hover:bg-amber-700">
+          <Button className="w-full bg-amber-600 text-white hover:bg-amber-700" disabled={loading || !buyRecommendation}>
             <ShoppingCart className="mr-2 h-4 w-4" />
             Create Purchase Order
           </Button>
@@ -76,12 +86,12 @@ export function SmartRecommendations() {
             <p className="text-card-foreground">
               Pay{" "}
               <span className="font-semibold text-primary">
-                {smartPayRecommendation.vendor.name}
+                {payRecommendation?.vendorName ?? "-"}
               </span>{" "}
               next
             </p>
             <p className="font-mono text-2xl font-bold text-emerald-400">
-              ₹{smartPayRecommendation.outstandingAmount.toLocaleString("en-IN")}
+              ₹{(payRecommendation?.outstandingAmount ?? 0).toLocaleString("en-IN")}
             </p>
           </div>
 
@@ -90,24 +100,24 @@ export function SmartRecommendations() {
               variant="outline"
               className={cn(
                 "border-red-500/30 bg-red-500/10 text-red-400",
-                smartPayRecommendation.toleranceLevel === "MEDIUM" &&
+                payRecommendation?.toleranceLevel === "MEDIUM" &&
                   "border-amber-500/30 bg-amber-500/10 text-amber-400",
-                smartPayRecommendation.toleranceLevel === "HIGH" &&
+                payRecommendation?.toleranceLevel === "HIGH" &&
                   "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
               )}
             >
-              Tolerance: {smartPayRecommendation.toleranceLevel}
+              Tolerance: {payRecommendation?.toleranceLevel ?? "-"}
             </Badge>
             <Badge
               variant="outline"
               className="border-blue-500/30 bg-blue-500/10 text-blue-400"
             >
               <Clock className="mr-1.5 h-3 w-3" />
-              {smartPayRecommendation.daysSinceLastPayment} days since payment
+              {payRecommendation?.daysSinceLastPayment ?? 0} days since payment
             </Badge>
           </div>
 
-          <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
+          <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700" disabled={loading || !payRecommendation}>
             <CreditCard className="mr-2 h-4 w-4" />
             Record Payment
           </Button>

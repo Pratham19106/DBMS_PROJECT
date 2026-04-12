@@ -1,7 +1,11 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { Eye, Wallet, Truck, Search, Filter } from "lucide-react"
+import { type FormEvent, useMemo, useState } from "react"
+import { Filter, RefreshCw, Search } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -10,9 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -33,7 +34,9 @@ import {
   addVendor,
   ApiRequestError,
   type BackendBill,
+  type BackendCommodity,
   type BackendPaymentLog,
+  deleteVendor,
   getCurrentUserId,
   getVendorBills,
   getVendorCommodities,
@@ -47,10 +50,10 @@ type ToleranceLevel = "LOW" | "MEDIUM" | "HIGH"
 type Flexibility = "STRICT" | "MODERATE" | "FLEXIBLE"
 
 type UiVendor = {
-  id: number
+  id: string
   name: string
   contact: string
-  commodities: string[]
+  commodities: BackendCommodity[]
   outstandingBalance: number
   toleranceLevel: ToleranceLevel
   flexibility: Flexibility
@@ -59,6 +62,8 @@ type UiVendor = {
   bills: BackendBill[]
   payments: BackendPaymentLog[]
 }
+
+const VENDORS_QUERY_KEY = "vendors-hydrated"
 
 function asNumber(value: number | string): number {
   const parsed = typeof value === "number" ? value : Number(value)
@@ -95,114 +100,118 @@ function getBalanceColor(balance: number) {
   return "text-red-400"
 }
 
+async function fetchHydratedVendors(userId: string): Promise<UiVendor[]> {
+  const rawVendors = await getVendors(userId)
+
+  return Promise.all(
+    rawVendors.map(async (vendor) => {
+      const [linkedCommodities, bills, payments] = await Promise.all([
+        getVendorCommodities(userId, vendor.id),
+        getVendorBills(userId, vendor.id),
+        getVendorPaymentLogs(userId, vendor.id),
+      ])
+
+      const outstandingBalance = bills.reduce((sum, bill) => {
+        const pending = asNumber(bill.total_amount) - asNumber(bill.paid_amount)
+        return sum + (pending > 0 ? pending : 0)
+      }, 0)
+
+      return {
+        id: vendor.id,
+        name: vendor.name,
+        contact: vendor.phone_number,
+        commodities: linkedCommodities,
+        outstandingBalance,
+        toleranceLevel: getToleranceLevel(outstandingBalance),
+        flexibility: getFlexibility(outstandingBalance),
+        lastSupplyDate: bills[0]?.date ?? null,
+        lastPaymentDate: payments[0]?.payment_date ?? null,
+        bills,
+        payments,
+      }
+    })
+  )
+}
+
 export function VendorsTable() {
+  const queryClient = useQueryClient()
   const userId = getCurrentUserId()
   const [search, setSearch] = useState("")
   const [commodityFilter, setCommodityFilter] = useState<string>("all")
   const [toleranceFilter, setToleranceFilter] = useState<string>("all")
-  const [vendors, setVendors] = useState<UiVendor[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedVendor, setSelectedVendor] = useState<UiVendor | null>(null)
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addName, setAddName] = useState("")
   const [addPhone, setAddPhone] = useState("")
   const [addError, setAddError] = useState<string | null>(null)
-  const [submittingAdd, setSubmittingAdd] = useState(false)
+  const [mutationError, setMutationError] = useState<string | null>(null)
 
-  const loadVendors = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const rawVendors = await getVendors(userId)
-      const hydrated = await Promise.all(
-        rawVendors.map(async (vendor) => {
-          const [linkedCommodities, bills, payments] = await Promise.all([
-            getVendorCommodities(userId, vendor.id),
-            getVendorBills(userId, vendor.id),
-            getVendorPaymentLogs(userId, vendor.id),
-          ])
-
-          const outstandingBalance = bills.reduce((sum, bill) => {
-            const pending = asNumber(bill.total_amount) - asNumber(bill.paid_amount)
-            return sum + (pending > 0 ? pending : 0)
-          }, 0)
-
-          return {
-            id: vendor.id,
-            name: vendor.name,
-            contact: vendor.phone_number,
-            commodities: linkedCommodities.map((commodity) => commodity.name),
-            outstandingBalance,
-            toleranceLevel: getToleranceLevel(outstandingBalance),
-            flexibility: getFlexibility(outstandingBalance),
-            lastSupplyDate: bills[0]?.date ?? null,
-            lastPaymentDate: payments[0]?.payment_date ?? null,
-            bills,
-            payments,
-          } as UiVendor
-        })
-      )
-
-      setVendors(hydrated)
-
-      if (selectedVendor) {
-        const updatedSelected = hydrated.find((item) => item.id === selectedVendor.id) ?? null
-        setSelectedVendor(updatedSelected)
-      }
-    } catch (loadError) {
-      const message =
-        loadError instanceof ApiRequestError
-          ? loadError.message
-          : "Failed to load vendors"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
-  }, [userId, selectedVendor])
-
-  useEffect(() => {
-    let ignore = false
-
-    void loadVendors().catch(() => {
-      if (!ignore) {
-        setError("Failed to load vendors")
-        setLoading(false)
-      }
-    })
-
-    return () => {
-      ignore = true
-    }
-  }, [loadVendors])
-
-  const allCommodities = [...new Set(vendors.flatMap((v) => v.commodities))]
-
-  const filteredVendors = vendors.filter((vendor) => {
-    const matchesSearch =
-      vendor.name.toLowerCase().includes(search.toLowerCase()) ||
-      vendor.commodities.some((c) =>
-        c.toLowerCase().includes(search.toLowerCase())
-      )
-    const matchesCommodity =
-      commodityFilter === "all" ||
-      vendor.commodities.includes(commodityFilter)
-    const matchesTolerance =
-      toleranceFilter === "all" || vendor.toleranceLevel === toleranceFilter
-
-    return matchesSearch && matchesCommodity && matchesTolerance
+  const vendorsQuery = useQuery({
+    queryKey: [VENDORS_QUERY_KEY, userId],
+    queryFn: () => fetchHydratedVendors(userId),
   })
 
-  const handleViewVendor = (vendor: UiVendor) => {
-    setSelectedVendor(vendor)
+  const vendors = vendorsQuery.data ?? []
+
+  const selectedVendor = useMemo(() => {
+    if (!selectedVendorId) return null
+    return vendors.find((vendor) => vendor.id === selectedVendorId) ?? null
+  }, [vendors, selectedVendorId])
+
+  const allCommodities = useMemo(() => {
+    return [...new Set(vendors.flatMap((vendor) => vendor.commodities.map((commodity) => commodity.name)))]
+  }, [vendors])
+
+  const filteredVendors = useMemo(() => {
+    return vendors.filter((vendor) => {
+      const matchesSearch =
+        vendor.name.toLowerCase().includes(search.toLowerCase()) ||
+        vendor.commodities.some((commodity) =>
+          commodity.name.toLowerCase().includes(search.toLowerCase())
+        )
+      const matchesCommodity =
+        commodityFilter === "all" ||
+        vendor.commodities.some((commodity) => commodity.name === commodityFilter)
+      const matchesTolerance =
+        toleranceFilter === "all" || vendor.toleranceLevel === toleranceFilter
+
+      return matchesSearch && matchesCommodity && matchesTolerance
+    })
+  }, [vendors, search, commodityFilter, toleranceFilter])
+
+  const addVendorMutation = useMutation({
+    mutationFn: (payload: { name: string; phone_number: string }) => addVendor(userId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [VENDORS_QUERY_KEY, userId] })
+    },
+  })
+
+  const updateVendorMutation = useMutation({
+    mutationFn: ({ vendorId, payload }: { vendorId: string; payload: { name: string; phone_number: string } }) =>
+      updateVendor(userId, vendorId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [VENDORS_QUERY_KEY, userId] })
+    },
+  })
+
+  const deleteVendorMutation = useMutation({
+    mutationFn: (vendorId: string) => deleteVendor(userId, vendorId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [VENDORS_QUERY_KEY, userId] })
+    },
+  })
+
+  const handleViewVendor = (vendorId: string) => {
+    setMutationError(null)
+    setSelectedVendorId(vendorId)
     setDrawerOpen(true)
   }
 
-  const handleAddVendor = async (e: React.FormEvent) => {
+  const handleAddVendor = async (e: FormEvent) => {
     e.preventDefault()
     setAddError(null)
+    setMutationError(null)
 
     const name = addName.trim()
     const phone = addPhone.trim()
@@ -212,29 +221,57 @@ export function VendorsTable() {
     }
 
     try {
-      setSubmittingAdd(true)
-      await addVendor(userId, { name, phone_number: phone })
+      await addVendorMutation.mutateAsync({ name, phone_number: phone })
       setAddDialogOpen(false)
       setAddName("")
       setAddPhone("")
-      await loadVendors()
     } catch (submitError) {
       const message =
         submitError instanceof ApiRequestError
           ? submitError.message
           : "Failed to add vendor"
       setAddError(message)
-    } finally {
-      setSubmittingAdd(false)
     }
   }
 
-  const handleUpdateVendor = async (vendorId: number, payload: { name: string; phone_number: string }) => {
-    await updateVendor(userId, vendorId, payload)
-    await loadVendors()
+  const handleUpdateVendor = async (vendorId: string, payload: { name: string; phone_number: string }) => {
+    setMutationError(null)
+    try {
+      await updateVendorMutation.mutateAsync({ vendorId, payload })
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError
+          ? error.message
+          : "Failed to update vendor"
+      setMutationError(message)
+      throw error
+    }
   }
 
-  if (loading) {
+  const handleDeleteVendor = async (vendorId: string) => {
+    setMutationError(null)
+    try {
+      await deleteVendorMutation.mutateAsync(vendorId)
+      if (selectedVendor?.id === vendorId) {
+        setDrawerOpen(false)
+        setSelectedVendorId(null)
+      }
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError
+          ? error.message
+          : "Failed to delete vendor"
+      setMutationError(message)
+      throw error
+    }
+  }
+
+  const handleCommodityChanged = async () => {
+    setMutationError(null)
+    await queryClient.invalidateQueries({ queryKey: [VENDORS_QUERY_KEY, userId] })
+  }
+
+  if (vendorsQuery.isLoading) {
     return (
       <div className="rounded-lg border border-border/50 bg-card p-6 text-sm text-muted-foreground">
         Loading vendors...
@@ -242,10 +279,23 @@ export function VendorsTable() {
     )
   }
 
-  if (error) {
+  if (vendorsQuery.isError) {
+    const message =
+      vendorsQuery.error instanceof ApiRequestError
+        ? vendorsQuery.error.message
+        : "Failed to load vendors"
+
     return (
       <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-300">
-        {error}
+        <p>{message}</p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void vendorsQuery.refetch()}
+          className="mt-3 border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+        >
+          Retry
+        </Button>
       </div>
     )
   }
@@ -263,7 +313,7 @@ export function VendorsTable() {
             className="bg-secondary pl-9"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             onClick={() => {
@@ -274,8 +324,17 @@ export function VendorsTable() {
           >
             Add Vendor
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void vendorsQuery.refetch()}
+            className="border-border/50 bg-secondary"
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", vendorsQuery.isFetching && "animate-spin")} />
+            Refresh
+          </Button>
           <Select value={commodityFilter} onValueChange={setCommodityFilter}>
-            <SelectTrigger className="w-[150px] bg-secondary">
+            <SelectTrigger className="w-37.5 bg-secondary">
               <Filter className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Commodity" />
             </SelectTrigger>
@@ -289,7 +348,7 @@ export function VendorsTable() {
             </SelectContent>
           </Select>
           <Select value={toleranceFilter} onValueChange={setToleranceFilter}>
-            <SelectTrigger className="w-[150px] bg-secondary">
+            <SelectTrigger className="w-37.5 bg-secondary">
               <SelectValue placeholder="Tolerance" />
             </SelectTrigger>
             <SelectContent>
@@ -302,50 +361,53 @@ export function VendorsTable() {
         </div>
       </div>
 
+      {mutationError && (
+        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+          {mutationError}
+        </div>
+      )}
+
       {/* Table */}
-      <div className="rounded-lg border border-border/50 bg-card">
+      <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent">
-              <TableHead className="text-muted-foreground">Vendor Name</TableHead>
+              <TableHead className="text-muted-foreground">Vendor</TableHead>
+              <TableHead className="text-muted-foreground">Contact</TableHead>
               <TableHead className="text-muted-foreground">Commodities</TableHead>
               <TableHead className="text-right text-muted-foreground">Outstanding</TableHead>
               <TableHead className="text-muted-foreground">Tolerance</TableHead>
-              <TableHead className="text-muted-foreground">Flexibility</TableHead>
               <TableHead className="text-muted-foreground">Last Supply</TableHead>
               <TableHead className="text-muted-foreground">Last Payment</TableHead>
-              <TableHead className="text-right text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredVendors.map((vendor) => (
               <TableRow
                 key={vendor.id}
+                onClick={() => handleViewVendor(vendor.id)}
                 className="cursor-pointer border-border/50 transition-colors hover:bg-secondary/50"
-                onClick={() => handleViewVendor(vendor)}
               >
-                <TableCell className="font-medium text-card-foreground">
-                  {vendor.name}
-                </TableCell>
+                <TableCell className="font-medium text-card-foreground">{vendor.name}</TableCell>
+                <TableCell className="text-muted-foreground">{vendor.contact}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {vendor.commodities.map((commodity) => (
-                      <Badge
-                        key={commodity}
-                        variant="secondary"
-                        className="bg-secondary/80 text-xs"
-                      >
-                        {commodity}
+                    {vendor.commodities.slice(0, 2).map((commodity) => (
+                      <Badge key={commodity.id} variant="secondary" className="bg-secondary/80 text-xs">
+                        {commodity.name}
                       </Badge>
                     ))}
+                    {vendor.commodities.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{vendor.commodities.length - 2}
+                      </Badge>
+                    )}
+                    {vendor.commodities.length === 0 && (
+                      <span className="text-xs text-muted-foreground">No commodities linked</span>
+                    )}
                   </div>
                 </TableCell>
-                <TableCell
-                  className={cn(
-                    "text-right font-mono font-semibold",
-                    getBalanceColor(vendor.outstandingBalance)
-                  )}
-                >
+                <TableCell className={cn("text-right font-mono font-semibold", getBalanceColor(vendor.outstandingBalance))}>
                   ₹{vendor.outstandingBalance.toLocaleString("en-IN")}
                 </TableCell>
                 <TableCell>
@@ -364,61 +426,18 @@ export function VendorsTable() {
                     {vendor.toleranceLevel}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs",
-                      vendor.flexibility === "STRICT" &&
-                        "border-red-500/30 bg-red-500/10 text-red-400",
-                      vendor.flexibility === "MODERATE" &&
-                        "border-amber-500/30 bg-amber-500/10 text-amber-400",
-                      vendor.flexibility === "FLEXIBLE" &&
-                        "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    )}
-                  >
-                    {vendor.flexibility}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatShortDate(vendor.lastSupplyDate)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatShortDate(vendor.lastPaymentDate)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleViewVendor(vendor)
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Wallet className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-blue-500 hover:bg-blue-500/10 hover:text-blue-400"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Truck className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+                <TableCell className="text-muted-foreground">{formatShortDate(vendor.lastSupplyDate)}</TableCell>
+                <TableCell className="text-muted-foreground">{formatShortDate(vendor.lastPaymentDate)}</TableCell>
               </TableRow>
             ))}
+
+            {filteredVendors.length === 0 && (
+              <TableRow className="border-border/50 hover:bg-transparent">
+                <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
+                  No vendors match your current filters.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -428,13 +447,17 @@ export function VendorsTable() {
         vendor={selectedVendor}
         userId={userId}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false)
+          setSelectedVendorId(null)
+        }}
         onUpdateVendor={handleUpdateVendor}
-        onCommodityLinked={loadVendors}
+        onDeleteVendor={handleDeleteVendor}
+        onCommodityChanged={handleCommodityChanged}
       />
 
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="border-border/50 bg-card sm:max-w-[460px]">
+        <DialogContent className="border-border/50 bg-card sm:max-w-115">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-card-foreground">
               Add New Vendor
@@ -477,10 +500,10 @@ export function VendorsTable() {
               </Button>
               <Button
                 type="submit"
-                disabled={submittingAdd}
+                disabled={addVendorMutation.isPending}
                 className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
-                {submittingAdd ? "Saving..." : "Save Vendor"}
+                {addVendorMutation.isPending ? "Saving..." : "Save Vendor"}
               </Button>
             </DialogFooter>
           </form>

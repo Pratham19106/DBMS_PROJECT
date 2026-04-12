@@ -10,13 +10,7 @@ import {
   Tooltip,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { vendors } from "@/lib/mock-data"
-
-const chartData = vendors.map((vendor) => ({
-  name: vendor.name.split(" ")[0],
-  fullName: vendor.name,
-  balance: vendor.outstandingBalance,
-}))
+import type { DebtDistributionPoint } from "./dashboard-data"
 
 function getBarColor(balance: number) {
   if (balance < 5000) return "#22c55e" // green
@@ -24,7 +18,12 @@ function getBarColor(balance: number) {
   return "#ef4444" // red
 }
 
-export function DebtDistributionChart() {
+type DebtDistributionChartProps = {
+  data: DebtDistributionPoint[]
+  loading?: boolean
+}
+
+export function DebtDistributionChart({ data, loading = false }: DebtDistributionChartProps) {
   return (
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-2">
@@ -35,7 +34,7 @@ export function DebtDistributionChart() {
       <CardContent className="pt-4">
         <div className="h-75 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <XAxis
                 dataKey="name"
                 tick={{ fill: "#9ca3af", fontSize: 12 }}
@@ -66,13 +65,18 @@ export function DebtDistributionChart() {
                 }
               />
               <Bar dataKey="balance" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
+                {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={getBarColor(entry.balance)} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
+        {!loading && data.length === 0 && (
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            No vendor debt data available yet.
+          </p>
+        )}
         <div className="mt-4 flex items-center justify-center gap-6 text-xs">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-sm bg-emerald-500" />

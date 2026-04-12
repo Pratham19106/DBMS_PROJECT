@@ -40,12 +40,6 @@ const getAllBillsForUser = async (req, res, next) => {
         const userId = req.params.userId;
         const result = await pool.query(getAllBillsForUserQuery, [userId])
 
-        if (result.rows.length === 0) {
-            const error = new Error("No bills found for this user")
-            error.status = 404
-            return next(error)
-        }
-
         return res.status(200).json({ bills: result.rows })
     } catch (err) {
         return next(err)
@@ -56,12 +50,6 @@ const getAllBillsForVendor = async (req, res, next) => {
     try {
         const { userId, vendorId } = req.params;
         const result = await pool.query(getAllBillsForVendorQuery, [vendorId, userId])
-
-        if (result.rows.length === 0) {
-            const error = new Error("No bills found for this vendor")
-            error.status = 404
-            return next(error)
-        }
 
         return res.status(200).json({ bills: result.rows })
     } catch (err) {

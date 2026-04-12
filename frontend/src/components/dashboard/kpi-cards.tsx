@@ -3,17 +3,18 @@
 import { TrendingDown, Wallet, Users, AlertTriangle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { dashboardMetrics } from "@/lib/mock-data"
+import type { DashboardMetrics } from "./dashboard-data"
 
 interface KPICardProps {
   title: string
   value: string | number
   icon: React.ReactNode
   accent: "danger" | "success" | "info" | "warning"
+  isCurrency?: boolean
   showPulse?: boolean
 }
 
-function KPICard({ title, value, icon, accent, showPulse }: KPICardProps) {
+function KPICard({ title, value, icon, accent, isCurrency, showPulse }: KPICardProps) {
   const accentStyles = {
     danger: "text-red-500 bg-red-500/10 border-red-500/20",
     success: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
@@ -37,18 +38,18 @@ function KPICard({ title, value, icon, accent, showPulse }: KPICardProps) {
 
   return (
     <Card className={cn("border-border/50 bg-card transition-all hover:border-white/20", accentStyles[accent])}>
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="font-mono text-2xl font-bold text-card-foreground">
-              {typeof value === "number" && title.toLowerCase().includes("debt") || title.toLowerCase().includes("cash")
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
+            <p className="font-mono text-xl font-bold text-card-foreground">
+              {typeof value === "number" && isCurrency
                 ? `₹${value.toLocaleString("en-IN")}`
                 : value}
             </p>
           </div>
           <div className="relative">
-            <div className={cn("rounded-lg p-2.5", iconBgStyles[accent])}>
+            <div className={cn("rounded-lg p-2", iconBgStyles[accent])}>
               <div className={iconColorStyles[accent]}>{icon}</div>
             </div>
             {showPulse && (
@@ -61,33 +62,40 @@ function KPICard({ title, value, icon, accent, showPulse }: KPICardProps) {
   )
 }
 
-export function KPICards() {
+type KPICardsProps = {
+  metrics: DashboardMetrics
+  loading?: boolean
+}
+
+export function KPICards({ metrics, loading = false }: KPICardsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <KPICard
-        title="Total Outstanding Debt"
-        value={dashboardMetrics.totalOutstandingDebt}
+        title="Total Debt"
+        value={loading ? "..." : metrics.totalOutstandingDebt}
         icon={<TrendingDown className="h-5 w-5" />}
         accent="danger"
+        isCurrency
       />
       <KPICard
-        title="Cash In Hand Today"
-        value={dashboardMetrics.cashInHand}
+        title="Cash In Hand"
+        value={loading ? "..." : metrics.cashInHand}
         icon={<Wallet className="h-5 w-5" />}
         accent="success"
+        isCurrency
       />
       <KPICard
         title="Active Vendors"
-        value={dashboardMetrics.activeVendors}
+        value={loading ? "..." : metrics.activeVendors}
         icon={<Users className="h-5 w-5" />}
         accent="info"
       />
       <KPICard
         title="Low Stock Alerts"
-        value={dashboardMetrics.lowStockAlerts}
+        value={loading ? "..." : metrics.lowStockAlerts}
         icon={<AlertTriangle className="h-5 w-5" />}
         accent="warning"
-        showPulse={dashboardMetrics.lowStockAlerts > 0}
+        showPulse={!loading && metrics.lowStockAlerts > 0}
       />
     </div>
   )
