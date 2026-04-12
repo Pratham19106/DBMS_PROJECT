@@ -31,17 +31,20 @@ import {
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import {
+  addCommodity,
   addVendor,
   ApiRequestError,
   type BackendBill,
   type BackendCommodity,
   type BackendPaymentLog,
   deleteVendor,
+  getCommodities,
   getCurrentUserId,
   getVendorBills,
   getVendorCommodities,
   getVendorPaymentLogs,
   getVendors,
+  linkCommodityToVendor,
   updateVendor,
 } from "@/lib/api"
 import { VendorDrawer } from "./vendor-drawer"
@@ -76,6 +79,14 @@ function getToleranceLevel(outstandingBalance: number): ToleranceLevel {
   return "LOW"
 }
 
+function toUiToleranceLevel(value?: string): ToleranceLevel {
+  const normalized = String(value ?? "").toLowerCase()
+  if (normalized === "high") return "HIGH"
+  if (normalized === "medium") return "MEDIUM"
+  if (normalized === "low") return "LOW"
+  return "LOW"
+}
+
 function getFlexibility(outstandingBalance: number): Flexibility {
   if (outstandingBalance < 5000) return "FLEXIBLE"
   if (outstandingBalance <= 15000) return "MODERATE"
@@ -84,7 +95,6 @@ function getFlexibility(outstandingBalance: number): Flexibility {
 
 function formatShortDate(input: string | null): string {
   if (!input) return "-"
-
   const date = new Date(input)
   if (Number.isNaN(date.getTime())) return "-"
 
@@ -122,7 +132,7 @@ async function fetchHydratedVendors(userId: string): Promise<UiVendor[]> {
         contact: vendor.phone_number,
         commodities: linkedCommodities,
         outstandingBalance,
-        toleranceLevel: getToleranceLevel(outstandingBalance),
+        toleranceLevel: toUiToleranceLevel(vendor.tolerance_level) ?? getToleranceLevel(outstandingBalance),
         flexibility: getFlexibility(outstandingBalance),
         lastSupplyDate: bills[0]?.date ?? null,
         lastPaymentDate: payments[0]?.payment_date ?? null,
@@ -144,6 +154,12 @@ export function VendorsTable() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addName, setAddName] = useState("")
   const [addPhone, setAddPhone] = useState("")
+  const [addToleranceAmount, setAddToleranceAmount] = useState("0")
+  const [addToleranceLevel, setAddToleranceLevel] = useState<"low" | "medium" | "high">("low")
+  const [addCommodityMode, setAddCommodityMode] = useState<"existing" | "new">("existing")
+  const [addExistingCommodityId, setAddExistingCommodityId] = useState<string>("none")
+  const [addNewCommodityName, setAddNewCommodityName] = useState("")
+  const [addNewCommodityUnit, setAddNewCommodityUnit] = useState("kg")
   const [addError, setAddError] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
 
@@ -153,6 +169,12 @@ export function VendorsTable() {
   })
 
   const vendors = vendorsQuery.data ?? []
+
+  const commoditiesQuery = useQuery({
+    queryKey: ["commodities", userId],
+    queryFn: () => getCommodities(userId),
+    enabled: addDialogOpen,
+  })
 
   const selectedVendor = useMemo(() => {
     if (!selectedVendorId) return null
@@ -181,7 +203,12 @@ export function VendorsTable() {
   }, [vendors, search, commodityFilter, toleranceFilter])
 
   const addVendorMutation = useMutation({
-    mutationFn: (payload: { name: string; phone_number: string }) => addVendor(userId, payload),
+    mutationFn: (payload: {
+      name: string
+      phone_number: string
+      tolerance_amount: number
+      tolerance_level: "low" | "medium" | "high"
+    }) => addVendor(userId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [VENDORS_QUERY_KEY, userId] })
     },
@@ -215,16 +242,67 @@ export function VendorsTable() {
 
     const name = addName.trim()
     const phone = addPhone.trim()
+    const toleranceAmount = Number(addToleranceAmount)
+
     if (!name || !phone) {
       setAddError("Name and phone number are required")
       return
     }
 
+    if (!Number.isFinite(toleranceAmount) || toleranceAmount < 0) {
+      setAddError("Tolerance amount must be 0 or greater")
+      return
+    }
+
     try {
-      await addVendorMutation.mutateAsync({ name, phone_number: phone })
+      const newVendor = await addVendorMutation.mutateAsync({
+        name,
+        phone_number: phone,
+        tolerance_amount: toleranceAmount,
+        tolerance_level: addToleranceLevel,
+      })
+
+      let commodityIdToLink: string | null = null
+      const existingCommodities = commoditiesQuery.data ?? []
+
+      if (addCommodityMode === "existing" && addExistingCommodityId !== "none") {
+        commodityIdToLink = addExistingCommodityId
+      }
+
+      if (addCommodityMode === "new") {
+        const commodityName = addNewCommodityName.trim().toLowerCase()
+        if (commodityName.length > 0) {
+          const alreadyExists = existingCommodities.find(
+            (commodity) => commodity.name.toLowerCase() === commodityName
+          )
+
+          if (alreadyExists) {
+            commodityIdToLink = alreadyExists.id
+          } else {
+            const createdCommodity = await addCommodity(userId, {
+              name: commodityName,
+              quantity: 0,
+              unit: addNewCommodityUnit,
+            })
+            commodityIdToLink = createdCommodity.id
+          }
+        }
+      }
+
+      if (commodityIdToLink) {
+        await linkCommodityToVendor(userId, newVendor.id, commodityIdToLink)
+      }
+
       setAddDialogOpen(false)
       setAddName("")
       setAddPhone("")
+      setAddToleranceAmount("0")
+      setAddToleranceLevel("low")
+      setAddCommodityMode("existing")
+      setAddExistingCommodityId("none")
+      setAddNewCommodityName("")
+      setAddNewCommodityUnit("kg")
+      await queryClient.invalidateQueries({ queryKey: ["commodities", userId] })
     } catch (submitError) {
       const message =
         submitError instanceof ApiRequestError
@@ -302,7 +380,6 @@ export function VendorsTable() {
 
   return (
     <>
-      {/* Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -367,8 +444,7 @@ export function VendorsTable() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-border/50 bg-card">
         <Table>
           <TableHeader>
             <TableRow className="border-border/50 hover:bg-transparent">
@@ -408,7 +484,7 @@ export function VendorsTable() {
                   </div>
                 </TableCell>
                 <TableCell className={cn("text-right font-mono font-semibold", getBalanceColor(vendor.outstandingBalance))}>
-                  ₹{vendor.outstandingBalance.toLocaleString("en-IN")}
+                  Rs {vendor.outstandingBalance.toLocaleString("en-IN")}
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -442,7 +518,6 @@ export function VendorsTable() {
         </Table>
       </div>
 
-      {/* Vendor Drawer */}
       <VendorDrawer
         vendor={selectedVendor}
         userId={userId}
@@ -483,6 +558,122 @@ export function VendorsTable() {
                 placeholder="Enter phone number"
                 className="bg-secondary"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="vendor-tolerance-amount">Tolerance Amount</Label>
+                <Input
+                  id="vendor-tolerance-amount"
+                  type="number"
+                  min={0}
+                  value={addToleranceAmount}
+                  onChange={(event) => setAddToleranceAmount(event.target.value)}
+                  placeholder="0"
+                  className="bg-secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vendor-tolerance-level">Tolerance Level</Label>
+                <Select
+                  value={addToleranceLevel}
+                  onValueChange={(value: "low" | "medium" | "high") => setAddToleranceLevel(value)}
+                >
+                  <SelectTrigger id="vendor-tolerance-level" className="bg-secondary">
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-border/50 bg-secondary/20 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Assign Commodity (Optional)
+              </p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAddCommodityMode("existing")}
+                  className={cn(
+                    "border-border/60 transition-all",
+                    addCommodityMode === "existing"
+                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  Use Existing
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAddCommodityMode("new")}
+                  className={cn(
+                    "border-border/60 transition-all",
+                    addCommodityMode === "new"
+                      ? "border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/20"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  Create New
+                </Button>
+              </div>
+
+              {addCommodityMode === "existing" && (
+                <div className="space-y-2">
+                  <Label htmlFor="vendor-existing-commodity">Existing Commodity</Label>
+                  <Select
+                    value={addExistingCommodityId}
+                    onValueChange={setAddExistingCommodityId}
+                    disabled={commoditiesQuery.isLoading}
+                  >
+                    <SelectTrigger id="vendor-existing-commodity" className="bg-secondary">
+                      <SelectValue placeholder="Select commodity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Do not assign now</SelectItem>
+                      {(commoditiesQuery.data ?? []).map((commodity) => (
+                        <SelectItem key={commodity.id} value={commodity.id}>
+                          {commodity.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {addCommodityMode === "new" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="vendor-new-commodity-name">Commodity Name</Label>
+                    <Input
+                      id="vendor-new-commodity-name"
+                      value={addNewCommodityName}
+                      onChange={(event) => setAddNewCommodityName(event.target.value)}
+                      placeholder="e.g. turmeric"
+                      className="bg-secondary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vendor-new-commodity-unit">Unit</Label>
+                    <Select value={addNewCommodityUnit} onValueChange={setAddNewCommodityUnit}>
+                      <SelectTrigger id="vendor-new-commodity-unit" className="bg-secondary">
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="litre">litre</SelectItem>
+                        <SelectItem value="piece">piece</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
             {addError && (
               <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">

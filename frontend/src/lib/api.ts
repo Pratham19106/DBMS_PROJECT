@@ -28,6 +28,8 @@ export type BackendVendor = {
   user_id: string
   name: string
   phone_number: string
+  tolerance_amount?: number | string
+  tolerance_level?: string
 }
 
 export type BackendCommodity = {
@@ -36,6 +38,7 @@ export type BackendCommodity = {
   name: string
   quantity: number
   unit: string
+  min_quantity?: number
 }
 
 export type BackendBill = {
@@ -153,6 +156,50 @@ export type AddPaymentResponse = {
   msg: string
   payment: BackendPayment
   bill: BackendBill
+}
+
+export type RegisterResponse = {
+  success: boolean
+  msg?: string
+  user: {
+    id: string | number
+    email: string
+    name?: string
+  }
+}
+
+export type LoginResponse = {
+  success: boolean
+  message?: string
+  token: string
+  user?: {
+    id: string | number
+    email: string
+    name?: string
+  }
+}
+
+export type AddBillCommodityPayload = {
+  commodity_id: string
+  supplied_ammount: number
+  unit?: string
+  cost: number
+  name: string
+}
+
+export type AddBillPayload = {
+  vendor_id: string
+  total_amount: number
+  paid_amount?: number
+  bill_url?: string | null
+  commodities: AddBillCommodityPayload[]
+}
+
+export type AddBillResponse = {
+  success: boolean
+  msg: string
+  bill: BackendBill
+  items: BackendBillItem[]
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000"
@@ -407,7 +454,12 @@ export async function getVendors(userId: string): Promise<BackendVendor[]> {
 
 export async function addVendor(
   userId: string,
-  payload: { name: string; phone_number: string }
+  payload: {
+    name: string
+    phone_number: string
+    tolerance_amount?: number
+    tolerance_level?: "low" | "medium" | "high"
+  }
 ): Promise<BackendVendor> {
   const data = await request<{ vendor: BackendVendor }>(`/users/${userId}/vendors`, {
     method: "POST",
@@ -420,7 +472,12 @@ export async function addVendor(
 export async function updateVendor(
   userId: string,
   vendorId: string,
-  payload: { name?: string; phone_number?: string }
+  payload: {
+    name?: string
+    phone_number?: string
+    tolerance_amount?: number
+    tolerance_level?: "low" | "medium" | "high"
+  }
 ): Promise<void> {
   await request<{ success: boolean; msg: string }>(`/users/${userId}/vendors/${vendorId}`, {
     method: "PUT",
@@ -626,6 +683,22 @@ export async function addCommodity(
     {
       method: "POST",
       body: JSON.stringify(payload),
+    }
+  )
+
+  return data.commodity
+}
+
+export async function updateCommodityQuantity(
+  userId: string,
+  commodityId: string,
+  quantity: number
+): Promise<BackendCommodity> {
+  const data = await request<{ success: boolean; msg: string; commodity: BackendCommodity }>(
+    `/users/${userId}/commodities/${commodityId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ quantity }),
     }
   )
 

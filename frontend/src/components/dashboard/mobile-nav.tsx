@@ -6,6 +6,7 @@ import {
   Store,
   Package,
   Wallet,
+  ClipboardList,
   Truck,
   Settings,
 } from "lucide-react"
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/vendors", label: "Vendors", icon: Store },
   { href: "/stock", label: "Stock", icon: Package },
   { href: "/payments", label: "Pay", icon: Wallet },
+  { href: "/daily-logs", label: "Logs", icon: ClipboardList },
   { href: "/supplies", label: "Supply", icon: Truck },
   { href: "/settings", label: "Settings", icon: Settings },
 ]

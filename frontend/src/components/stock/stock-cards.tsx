@@ -15,15 +15,15 @@ import {
   getSmartVendorRecommendation,
   type BackendSmartVendor,
 } from "@/lib/api"
+import { updateTotalsFromCommodities } from "@/lib/commodity-capacity"
 
 type UiCommodity = {
   id: string
   name: string
   icon: string
   currentStock: number
-  maxStock: number
+  totalStock: number
   unit: string
-  reorderThreshold: number
   linkedVendorNames: string[]
 }
 
@@ -46,15 +46,15 @@ function getCommodityIcon(name: string): string {
   return "📦"
 }
 
-function getStockColor(percentage: number, threshold: number) {
-  if (percentage <= threshold) return "bg-red-500"
-  if (percentage <= threshold * 2) return "bg-amber-500"
+function getStockColor(percentage: number) {
+  if (percentage <= 50) return "bg-red-500"
+  if (percentage <= 80) return "bg-amber-500"
   return "bg-emerald-500"
 }
 
-function getStockStatus(percentage: number, threshold: number) {
-  if (percentage <= threshold) return { label: "CRITICAL", color: "text-red-400" }
-  if (percentage <= threshold * 2) return { label: "LOW", color: "text-amber-400" }
+function getStockStatus(percentage: number) {
+  if (percentage <= 50) return { label: "CRITICAL", color: "text-red-400" }
+  if (percentage <= 80) return { label: "LOW", color: "text-amber-400" }
   return { label: "OK", color: "text-emerald-400" }
 }
 
@@ -76,17 +76,18 @@ export function StockCards() {
 
       try {
         const items = await getCommodities(userId)
+        const totalQuantities = updateTotalsFromCommodities(userId, items)
         const hydrated = await Promise.all(
           items.map(async (item) => {
             const linkedVendors = await getCommodityVendors(userId, item.id)
+            const totalStock = Math.max(Number(totalQuantities[item.id] ?? item.quantity), 1)
             return {
               id: item.id,
               name: item.name,
               icon: getCommodityIcon(item.name),
               currentStock: item.quantity,
-              maxStock: Math.max(item.quantity * 2, 100),
+              totalStock,
               unit: item.unit,
-              reorderThreshold: 20,
               linkedVendorNames: linkedVendors.map((vendor) => vendor.name),
             }
           })
@@ -183,8 +184,8 @@ export function StockCards() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {commodities.map((commodity) => {
-        const percentage = (commodity.currentStock / commodity.maxStock) * 100
-        const status = getStockStatus(percentage, commodity.reorderThreshold)
+        const percentage = Math.min((commodity.currentStock / commodity.totalStock) * 100, 100)
+        const status = getStockStatus(percentage)
         const priorityState = vendorPriorityByCommodity[commodity.id]
         const shouldShowPriority = priorityState?.visible === true
 
@@ -193,7 +194,7 @@ export function StockCards() {
             key={commodity.id}
             className={cn(
               "border-border/50 bg-card transition-all hover:border-white/20",
-              percentage <= commodity.reorderThreshold && "border-amber-500/30"
+              percentage <= 50 && "border-amber-500/30"
             )}
           >
             <CardHeader className="pb-2">
@@ -220,25 +221,22 @@ export function StockCards() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Current Stock</span>
                   <span className="font-mono font-medium text-card-foreground">
-                    {commodity.currentStock} / {commodity.maxStock} {commodity.unit}
+                    {commodity.currentStock} {commodity.unit}
                   </span>
                 </div>
                 <Progress
                   value={percentage}
                   className="h-2 bg-secondary"
-                  indicatorClassName={getStockColor(
-                    percentage,
-                    commodity.reorderThreshold
-                  )}
+                  indicatorClassName={getStockColor(percentage)}
                 />
               </div>
 
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/50 bg-secondary/30 p-3">
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">Reorder At</p>
+                  <p className="text-xs text-muted-foreground">Total Quantity</p>
                   <p className="font-mono text-sm font-medium text-card-foreground">
-                    {commodity.reorderThreshold}%
+                    {commodity.totalStock} {commodity.unit}
                   </p>
                 </div>
                 <div className="text-center">
@@ -264,13 +262,13 @@ export function StockCards() {
                 onClick={() => void handleBuyNow(commodity.id)}
                 className={cn(
                   "w-full",
-                  percentage <= commodity.reorderThreshold
+                  percentage <= 50
                     ? "bg-amber-600 text-white hover:bg-amber-700"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 )}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                {percentage <= commodity.reorderThreshold ? "Buy Now" : "Order"}
+                {percentage <= 50 ? "Buy Now" : "Order"}
               </Button>
 
               {shouldShowPriority && (

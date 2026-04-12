@@ -73,7 +73,7 @@ export function SmartPayPanel() {
   })
 
   const suggestedVendors = suggestionQuery.data ?? []
-  const vendorSignature = suggestedVendors.map((vendor) => vendor.id).join(",")
+  const vendorSignature = suggestedVendors.map((vendor) => vendor.vendor_id).join(",")
 
   const vendorBillsQuery = useQuery({
     queryKey: ["payment-suggestion-bills", userId, vendorSignature],
@@ -81,8 +81,8 @@ export function SmartPayPanel() {
     queryFn: async () => {
       const entries = await Promise.all(
         suggestedVendors.map(async (vendor) => {
-          const bills = await getVendorBills(userId, vendor.id)
-          return [vendor.id, bills] as const
+          const bills = await getVendorBills(userId, vendor.vendor_id)
+          return [vendor.vendor_id, bills] as const
         })
       )
 

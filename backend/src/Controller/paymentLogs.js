@@ -7,12 +7,7 @@ const {
     updateBillAfterPaymentQuery,
     getPaymentSuggestionQuery
 } = require('../services/paymentLogQueries')
-
-const determineBillStatus = (paid_amount, total_amount) => {
-    if (paid_amount <= 0) return 'unpaid'
-    if (paid_amount >= total_amount) return 'paid'
-    return 'partial'
-}
+const { resolveBillStatusByAmounts } = require('../utils/billStatus')
 
 const getAllPaymentLogsForUser = async (req, res, next) => {
     try {
@@ -76,7 +71,7 @@ const addPaymentLog = async (req, res, next) => {
         }
 
         const newPaidAmount = Number(bill.paid_amount) + paidAmount
-        const newStatus = determineBillStatus(newPaidAmount, Number(bill.total_amount))
+        const newStatus = await resolveBillStatusByAmounts(newPaidAmount, Number(bill.total_amount))
 
         const logResult = await client.query(addPaymentLogQuery, [
             userId, vendor_id, bill_id, paidAmount, payment_mode
