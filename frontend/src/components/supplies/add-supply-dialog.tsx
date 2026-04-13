@@ -739,7 +739,6 @@ export function AddBillDialog({
 
                   <div className="rounded-xl border border-border/60 bg-card/40 p-4">
                     <p className="text-xs text-muted-foreground">
-                      Backend payload uses commodities[].supplied_ammount and computes bill status from paid and total.
                     </p>
                   </div>
 
