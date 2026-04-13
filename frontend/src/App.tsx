@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom"
+import LandingPage from "@/pages/LandingPage"
 import DashboardPage from "@/pages/DashboardPage"
 import PaymentsPage from "@/pages/PaymentsPage"
 import SettingsPage from "./pages/SettingsPage"
@@ -56,13 +57,13 @@ function RootRedirect() {
     return <AuthLoadingScreen />
   }
 
-  return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+  return <Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<RootRedirect />} />
+      <Route path="/" element={<LandingPage />} />
 
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />

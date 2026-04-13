@@ -1,7 +1,7 @@
 "use client"
 
 import { type FormEvent, useMemo, useState } from "react"
-import { Filter, RefreshCw, Search } from "lucide-react"
+import { Filter, Plus, RefreshCw, Search } from "lucide-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -66,7 +66,29 @@ type UiVendor = {
   payments: BackendPayment[]
 }
 
+type CommodityAssignMode = "existing" | "new"
+
+type CommodityAssignDraft = {
+  id: string
+  mode: CommodityAssignMode
+  existingCommodityId: string
+  newCommodityName: string
+  unit: string
+}
+
 const VENDORS_QUERY_KEY = "vendors-hydrated"
+let commodityDraftSeed = 0
+
+function createCommodityAssignDraft(): CommodityAssignDraft {
+  commodityDraftSeed += 1
+  return {
+    id: `vendor-commodity-${commodityDraftSeed}`,
+    mode: "existing",
+    existingCommodityId: "none",
+    newCommodityName: "",
+    unit: "kg",
+  }
+}
 
 function asNumber(value: number | string): number {
   const parsed = typeof value === "number" ? value : Number(value)
@@ -165,10 +187,9 @@ export function VendorsTable() {
   const [addPhone, setAddPhone] = useState("")
   const [addToleranceAmount, setAddToleranceAmount] = useState("0")
   const [addToleranceLevel, setAddToleranceLevel] = useState<"low" | "medium" | "high">("low")
-  const [addCommodityMode, setAddCommodityMode] = useState<"existing" | "new">("existing")
-  const [addExistingCommodityId, setAddExistingCommodityId] = useState<string>("none")
-  const [addNewCommodityName, setAddNewCommodityName] = useState("")
-  const [addNewCommodityUnit, setAddNewCommodityUnit] = useState("kg")
+  const [addCommodityRows, setAddCommodityRows] = useState<CommodityAssignDraft[]>([
+    createCommodityAssignDraft(),
+  ])
   const [addError, setAddError] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
 
@@ -277,35 +298,44 @@ export function VendorsTable() {
         tolerance_level: addToleranceLevel,
       })
 
-      let commodityIdToLink: string | null = null
       const existingCommodities = commoditiesQuery.data ?? []
+      const commodityByName = new Map<string, BackendCommodity>()
 
-      if (addCommodityMode === "existing" && addExistingCommodityId !== "none") {
-        commodityIdToLink = addExistingCommodityId
-      }
+      existingCommodities.forEach((commodity) => {
+        commodityByName.set(commodity.name.trim().toLowerCase(), commodity)
+      })
 
-      if (addCommodityMode === "new") {
-        const commodityName = addNewCommodityName.trim().toLowerCase()
-        if (commodityName.length > 0) {
-          const alreadyExists = existingCommodities.find(
-            (commodity) => commodity.name.toLowerCase() === commodityName
-          )
+      const activeRows = addCommodityRows.filter((row) =>
+        row.mode === "existing"
+          ? row.existingCommodityId !== "none"
+          : row.newCommodityName.trim().length > 0
+      )
 
-          if (alreadyExists) {
-            commodityIdToLink = alreadyExists.id
-          } else {
-            const createdCommodity = await addCommodity(userId, {
-              name: commodityName,
-              quantity: 0,
-              unit: addNewCommodityUnit,
-            })
-            commodityIdToLink = createdCommodity.id
-          }
+      const commodityIdsToLink = new Set<string>()
+
+      for (const row of activeRows) {
+        if (row.mode === "existing") {
+          commodityIdsToLink.add(row.existingCommodityId)
+          continue
         }
+
+        const commodityName = row.newCommodityName.trim().toLowerCase()
+        let commodity = commodityByName.get(commodityName)
+
+        if (!commodity) {
+          commodity = await addCommodity(userId, {
+            name: commodityName,
+            quantity: 0,
+            unit: row.unit,
+          })
+          commodityByName.set(commodityName, commodity)
+        }
+
+        commodityIdsToLink.add(commodity.id)
       }
 
-      if (commodityIdToLink) {
-        await linkCommodityToVendor(userId, newVendor.id, commodityIdToLink)
+      for (const commodityId of commodityIdsToLink) {
+        await linkCommodityToVendor(userId, newVendor.id, commodityId)
       }
 
       setAddDialogOpen(false)
@@ -313,10 +343,7 @@ export function VendorsTable() {
       setAddPhone("")
       setAddToleranceAmount("0")
       setAddToleranceLevel("low")
-      setAddCommodityMode("existing")
-      setAddExistingCommodityId("none")
-      setAddNewCommodityName("")
-      setAddNewCommodityUnit("kg")
+      setAddCommodityRows([createCommodityAssignDraft()])
       await queryClient.invalidateQueries({ queryKey: ["commodities", userId] })
     } catch (submitError) {
       const message =
@@ -325,6 +352,27 @@ export function VendorsTable() {
           : "Failed to add vendor"
       setAddError(message)
     }
+  }
+
+  const updateCommodityRow = (
+    draftId: string,
+    updater: (row: CommodityAssignDraft) => CommodityAssignDraft
+  ) => {
+    setAddCommodityRows((prev) => prev.map((row) => (row.id === draftId ? updater(row) : row)))
+  }
+
+  const addCommodityRow = () => {
+    setAddCommodityRows((prev) => [...prev, createCommodityAssignDraft()])
+  }
+
+  const removeCommodityRow = (draftId: string) => {
+    setAddCommodityRows((prev) => {
+      if (prev.length === 1) {
+        return prev
+      }
+
+      return prev.filter((row) => row.id !== draftId)
+    })
   }
 
   const handleUpdateVendor = async (vendorId: string, payload: { name: string; phone_number: string }) => {
@@ -607,88 +655,147 @@ export function VendorsTable() {
 
             <div className="space-y-3 rounded-lg border border-border/50 bg-secondary/20 p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Assign Commodity (Optional)
+                Assign Commodities (Optional)
               </p>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-3">
+                {addCommodityRows.map((row, index) => (
+                  <div key={row.id} className="rounded-lg border border-border/50 bg-card/35 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-card-foreground">Commodity {index + 1}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={addCommodityRows.length === 1}
+                        onClick={() => removeCommodityRow(row.id)}
+                        className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          updateCommodityRow(row.id, (draft) => ({
+                            ...draft,
+                            mode: "existing",
+                            newCommodityName: "",
+                          }))
+                        }
+                        className={cn(
+                          "border-border/60 transition-all",
+                          row.mode === "existing"
+                            ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
+                            : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                        )}
+                      >
+                        Use Existing
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          updateCommodityRow(row.id, (draft) => ({
+                            ...draft,
+                            mode: "new",
+                            existingCommodityId: "none",
+                          }))
+                        }
+                        className={cn(
+                          "border-border/60 transition-all",
+                          row.mode === "new"
+                            ? "border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/20"
+                            : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                        )}
+                      >
+                        Create New
+                      </Button>
+                    </div>
+
+                    {row.mode === "existing" && (
+                      <div className="mt-3 space-y-2">
+                        <Label>Existing Commodity</Label>
+                        <Select
+                          value={row.existingCommodityId}
+                          onValueChange={(value) =>
+                            updateCommodityRow(row.id, (draft) => ({
+                              ...draft,
+                              existingCommodityId: value,
+                            }))
+                          }
+                          disabled={commoditiesQuery.isLoading}
+                        >
+                          <SelectTrigger className="bg-secondary">
+                            <SelectValue placeholder="Select commodity" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Do not assign now</SelectItem>
+                            {(commoditiesQuery.data ?? []).map((commodity) => (
+                              <SelectItem key={commodity.id} value={commodity.id}>
+                                {commodity.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {row.mode === "new" && (
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Commodity Name</Label>
+                          <Input
+                            value={row.newCommodityName}
+                            onChange={(event) =>
+                              updateCommodityRow(row.id, (draft) => ({
+                                ...draft,
+                                newCommodityName: event.target.value,
+                              }))
+                            }
+                            placeholder="e.g. turmeric"
+                            className="bg-secondary"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Unit</Label>
+                          <Select
+                            value={row.unit}
+                            onValueChange={(value) =>
+                              updateCommodityRow(row.id, (draft) => ({
+                                ...draft,
+                                unit: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="bg-secondary">
+                              <SelectValue placeholder="Select unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="kg">kg</SelectItem>
+                              <SelectItem value="liter">liter</SelectItem>
+                              <SelectItem value="pcs">pcs</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setAddCommodityMode("existing")}
-                  className={cn(
-                    "border-border/60 transition-all",
-                    addCommodityMode === "existing"
-                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
-                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                  )}
+                  onClick={addCommodityRow}
+                  className="w-full border-border/50 bg-secondary"
                 >
-                  Use Existing
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAddCommodityMode("new")}
-                  className={cn(
-                    "border-border/60 transition-all",
-                    addCommodityMode === "new"
-                      ? "border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/20"
-                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                  )}
-                >
-                  Create New
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Commodity Row
                 </Button>
               </div>
-
-              {addCommodityMode === "existing" && (
-                <div className="space-y-2">
-                  <Label htmlFor="vendor-existing-commodity">Existing Commodity</Label>
-                  <Select
-                    value={addExistingCommodityId}
-                    onValueChange={setAddExistingCommodityId}
-                    disabled={commoditiesQuery.isLoading}
-                  >
-                    <SelectTrigger id="vendor-existing-commodity" className="bg-secondary">
-                      <SelectValue placeholder="Select commodity" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Do not assign now</SelectItem>
-                      {(commoditiesQuery.data ?? []).map((commodity) => (
-                        <SelectItem key={commodity.id} value={commodity.id}>
-                          {commodity.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {addCommodityMode === "new" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="vendor-new-commodity-name">Commodity Name</Label>
-                    <Input
-                      id="vendor-new-commodity-name"
-                      value={addNewCommodityName}
-                      onChange={(event) => setAddNewCommodityName(event.target.value)}
-                      placeholder="e.g. turmeric"
-                      className="bg-secondary"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="vendor-new-commodity-unit">Unit</Label>
-                    <Select value={addNewCommodityUnit} onValueChange={setAddNewCommodityUnit}>
-                      <SelectTrigger id="vendor-new-commodity-unit" className="bg-secondary">
-                        <SelectValue placeholder="Select unit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kg">kg</SelectItem>
-                        <SelectItem value="litre">litre</SelectItem>
-                        <SelectItem value="piece">piece</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
             </div>
             {addError && (
               <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
