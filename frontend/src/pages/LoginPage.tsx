@@ -108,7 +108,7 @@ export default function LoginPage() {
         {/* Left: editorial copy */}
         <section className="flex flex-col justify-center">
           <p className="kv-auth-reveal kv-microprint text-muted-foreground">
-            Operator Access · Verified Entry
+            Operator Access · Secure Entry
           </p>
           <h1
             className="kv-auth-reveal mt-4 text-5xl text-forest sm:text-6xl lg:text-7xl"
@@ -118,7 +118,7 @@ export default function LoginPage() {
             <span className="block text-forest/70">to the ledger.</span>
           </h1>
           <p className="kv-auth-reveal mt-6 max-w-md text-base leading-relaxed text-muted-foreground">
-            Every entry timestamped. Every vendor verified. Every rupee traceable. Step back into
+            Every entry logged. Every vendor tracked. Every rupee traceable. Step back into
             your operational vault and resume where you left off.
           </p>
 
@@ -126,8 +126,8 @@ export default function LoginPage() {
 
           <dl className="kv-auth-reveal mt-6 grid grid-cols-3 gap-6">
             {[
-              { label: "SESSIONS", value: "Encrypted" },
-              { label: "LEDGER", value: "Immutable" },
+              { label: "SESSIONS", value: "Protected" },
+              { label: "LEDGER", value: "Reliable" },
               { label: "ACCESS", value: "Operator" },
             ].map((item) => (
               <div key={item.label}>
@@ -261,9 +261,9 @@ export default function LoginPage() {
               {/* MRZ strip */}
               <div className="kv-divider" />
               <div className="kv-mrz-light">
-                KV&lt;&lt;OPERATOR&lt;&lt;SIGNIN&lt;&lt;IN&lt;&lt;{serialNumber}&lt;&lt;
+                SUPPLYSYNC SIGN-IN ID &middot; {serialNumber}
                 <br />
-                F&lt;&lt;SUPPLYSYNC&lt;&lt;LEDGER&lt;&lt;VERIFIED&lt;&lt;ONCHAIN
+                OPERATOR ACCESS &middot; VERIFIED RECORDS
               </div>
 
               <div className="pt-2 text-center">

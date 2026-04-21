@@ -26,10 +26,11 @@ function formatCurrencyShort(value: number): string {
   return `Rs ${value.toLocaleString("en-IN")}`
 }
 
-function buildDidHandle(seed: string): string {
+function buildProfileId(seed: string): string {
   const cleanSeed = seed.replace(/[^a-z0-9]/gi, "").toLowerCase() || "operator"
-  const suffix = cleanSeed.slice(-6).padStart(6, "0")
-  return `did:supplysync:0x${suffix}_${Math.floor(Math.random() * 9000 + 1000).toString(16)}`
+  const suffix = cleanSeed.slice(-6).toUpperCase().padStart(6, "0")
+  const serial = Math.floor(Math.random() * 9000 + 1000)
+  return `SS-${suffix}-${serial}`
 }
 
 export default function DashboardPage() {
@@ -42,16 +43,15 @@ export default function DashboardPage() {
     const d = new Date()
     return d.toLocaleDateString("en-IN", { month: "short", year: "numeric" })
   }, [])
-  const did = useMemo(() => buildDidHandle(user?.id ?? user?.email ?? "operator"), [user?.id, user?.email])
+  const profileId = useMemo(() => buildProfileId(user?.id ?? user?.email ?? "operator"), [user?.id, user?.email])
 
   const metrics = data.metrics
-  const mrzLine = `KV<<${displayName.toUpperCase().replace(/\s+/g, "<")}<<IN<<${handle.slice(0, 8).toUpperCase().padEnd(8, "0")}<<240614<<F<<4870`
-
+ 
   return (
     <DashboardLayout>
       <div className="space-y-8">
         {/* Section header */}
-        <div className="kv-page-reveal flex flex-wrap items-end justify-between gap-4">
+        <div className="kv-page-reveal kv-section-shell flex flex-wrap items-end justify-between gap-4 p-4 sm:p-5">
           <div>
             <p className="kv-microprint text-muted-foreground">Identity Vault</p>
             <h1
@@ -134,8 +134,8 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="mt-7">
-                  <p className="kv-microprint-sm text-cream/60">Decentralised Identifier</p>
-                  <p className="mt-1 break-all font-mono text-xs text-cream/90">{did}</p>
+                  <p className="kv-microprint-sm text-cream/60">Profile ID</p>
+                  <p className="mt-1 break-all font-mono text-xs text-cream/90">{profileId}</p>
                 </div>
               </div>
 
@@ -165,15 +165,12 @@ export default function DashboardPage() {
                 </div>
                 <div className="kv-verified-badge mt-3">
                   <Sparkles className="h-3 w-3" />
-                  Verified on-chain
+                  Verified record
                 </div>
               </div>
             </div>
 
-            {/* MRZ strip */}
-            <div className="border-t border-cream/15 bg-cream/5 px-6 py-3">
-              <p className="kv-mrz truncate">{mrzLine}</p>
-            </div>
+        
 
             {/* Decorative corners */}
             <span className="kv-corner kv-corner-tl border-amber" />

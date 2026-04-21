@@ -16,6 +16,8 @@ import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
+import { MonthPicker } from "@/components/ui/month-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -523,7 +525,7 @@ export default function DailyLogsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="kv-page-reveal flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
+        <div className="kv-page-reveal kv-section-shell flex flex-wrap items-end justify-between gap-4 border-b border-border p-4 pb-6 sm:p-5 sm:pb-6">
           <div>
             <p className="kv-microprint text-muted-foreground">Section 05 · Operator Timeline</p>
             <h1
@@ -867,18 +869,16 @@ export default function DailyLogsPage() {
               <div className="space-y-2">
                 <Label>Period</Label>
                 {analyticsView === "daily" && (
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={selectedDate}
-                    onChange={(event) => setSelectedDate(event.target.value)}
+                    onChange={setSelectedDate}
                     className="bg-secondary"
                   />
                 )}
                 {analyticsView === "monthly" && (
-                  <Input
-                    type="month"
+                  <MonthPicker
                     value={selectedMonth}
-                    onChange={(event) => setSelectedMonth(event.target.value)}
+                    onChange={setSelectedMonth}
                     className="bg-secondary"
                   />
                 )}

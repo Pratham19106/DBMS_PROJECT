@@ -6,7 +6,7 @@ export default function StockPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="kv-page-reveal flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
+        <div className="kv-page-reveal kv-section-shell flex flex-wrap items-end justify-between gap-4 border-b border-border p-4 pb-6 sm:p-5 sm:pb-6">
           <div>
             <p className="kv-microprint text-muted-foreground">Section 02 · Inventory Registry</p>
             <h1

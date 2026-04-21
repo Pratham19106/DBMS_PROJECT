@@ -13,6 +13,8 @@ import {
   YAxis,
 } from "recharts"
 import { TrendingUp } from "lucide-react"
+import { DatePicker } from "@/components/ui/date-picker"
+import { MonthPicker } from "@/components/ui/month-picker"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -135,18 +137,16 @@ export function FinancialAnalysis() {
           </Select>
 
           {view === "daily" && (
-            <Input
-              type="date"
+            <DatePicker
               value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
+              onChange={setSelectedDate}
               className="w-40 border-border bg-background"
             />
           )}
           {view === "monthly" && (
-            <Input
-              type="month"
+            <MonthPicker
               value={selectedMonth}
-              onChange={(event) => setSelectedMonth(event.target.value)}
+              onChange={setSelectedMonth}
               className="w-40 border-border bg-background"
             />
           )}

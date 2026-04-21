@@ -63,7 +63,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="absolute -right-36 bottom-16 h-120 w-120 rounded-full bg-forest/10 blur-3xl" />
       </div>
       {/* Editorial top header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
+      <header className="kv-topbar-shell sticky top-0 z-40 border-b border-border backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
           {/* Brand block */}
           <Link to="/dashboard" className="group flex items-center gap-3">
@@ -137,7 +137,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Decorative microprint ribbon */}
-        <div className="border-t border-border/60 bg-cream-card/60">
+        <div className="kv-topbar-ribbon border-t border-border/60">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 overflow-hidden px-4 py-1.5 md:px-8">
             <p className="kv-microprint-sm truncate text-muted-foreground">
               SUPPLYSYNC · VENDOR FINANCE · INVENTORY CONTROL · KV/2024/
@@ -151,7 +151,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Mobile dropdown nav */}
         {mobileOpen && (
-          <div className="border-t border-border bg-cream-card md:hidden">
+          <div className="kv-topbar-ribbon border-t border-border md:hidden">
             <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
               {navItems.map((item) => {
                 const isActive = pathname === item.href
@@ -201,7 +201,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             &copy; {new Date().getFullYear()} SupplySync · Editorial Operations Suite
           </p>
           <p className="kv-microprint-sm text-muted-foreground">
-            KV · <span className="text-forest">VERIFIED ON-CHAIN</span> · SERIES 24
+            KV · <span className="text-forest">VERIFIED RECORDS</span> · SERIES 24
           </p>
         </div>
       </footer>
