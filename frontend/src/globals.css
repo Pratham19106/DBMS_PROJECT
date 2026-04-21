@@ -1,0 +1,587 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   KAVACH EDITORIAL DESIGN SYSTEM
+   Palette: Forest Green · Bone Cream · Marigold Amber
+   Philosophy: Editorial fintech document. Anti-AI-generated.
+   ============================================================ */
+
+:root {
+  /* Core palette - 3 tones only */
+  --kv-forest: #1a3d2a;
+  --kv-forest-deep: #0f2719;
+  --kv-forest-soft: #2a5a3d;
+  --kv-cream: #f5f3f0;
+  --kv-cream-card: #fbf9f5;
+  --kv-cream-muted: #ede9e2;
+  --kv-amber: #d4a574;
+  --kv-amber-soft: #e8cfa8;
+  --kv-amber-deep: #a8803f;
+  --kv-ink: #1a1a1a;
+  --kv-rust: #a13b2b;
+  --kv-border: #d6d0c4;
+  --kv-border-soft: #e4ded2;
+
+  /* Shadcn tokens mapped to KAVACH palette - LIGHT EDITORIAL THEME */
+  --background: #f5f3f0;
+  --foreground: #1a3d2a;
+  --card: #fbf9f5;
+  --card-foreground: #1a3d2a;
+  --popover: #fbf9f5;
+  --popover-foreground: #1a3d2a;
+  --primary: #1a3d2a;
+  --primary-foreground: #f5f3f0;
+  --secondary: #ede9e2;
+  --secondary-foreground: #1a3d2a;
+  --muted: #ede9e2;
+  --muted-foreground: #5a6b5e;
+  --accent: #d4a574;
+  --accent-foreground: #1a3d2a;
+  --destructive: #a13b2b;
+  --destructive-foreground: #f5f3f0;
+  --border: #d6d0c4;
+  --input: #e4ded2;
+  --ring: #d4a574;
+
+  --chart-1: #1a3d2a;
+  --chart-2: #d4a574;
+  --chart-3: #2a5a3d;
+  --chart-4: #a8803f;
+  --chart-5: #8b9b8e;
+  --radius: 0.5rem;
+
+  --sidebar: #1a3d2a;
+  --sidebar-foreground: #f5f3f0;
+  --sidebar-primary: #d4a574;
+  --sidebar-primary-foreground: #1a3d2a;
+  --sidebar-accent: #2a5a3d;
+  --sidebar-accent-foreground: #f5f3f0;
+  --sidebar-border: #2a5a3d;
+  --sidebar-ring: #d4a574;
+
+  --success: #1a3d2a;
+  --warning: #d4a574;
+  --danger: #a13b2b;
+  --info: #2a5a3d;
+}
+
+.dark {
+  /* Keep dark tokens aligned for compatibility */
+  --background: #f5f3f0;
+  --foreground: #1a3d2a;
+  --card: #fbf9f5;
+  --card-foreground: #1a3d2a;
+  --popover: #fbf9f5;
+  --popover-foreground: #1a3d2a;
+  --primary: #1a3d2a;
+  --primary-foreground: #f5f3f0;
+  --secondary: #ede9e2;
+  --secondary-foreground: #1a3d2a;
+  --muted: #ede9e2;
+  --muted-foreground: #5a6b5e;
+  --accent: #d4a574;
+  --accent-foreground: #1a3d2a;
+  --destructive: #a13b2b;
+  --destructive-foreground: #f5f3f0;
+  --border: #d6d0c4;
+  --input: #e4ded2;
+  --ring: #d4a574;
+
+  --sidebar: #1a3d2a;
+  --sidebar-foreground: #f5f3f0;
+  --sidebar-primary: #d4a574;
+  --sidebar-primary-foreground: #1a3d2a;
+  --sidebar-accent: #2a5a3d;
+  --sidebar-accent-foreground: #f5f3f0;
+  --sidebar-border: #2a5a3d;
+  --sidebar-ring: #d4a574;
+}
+
+@theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', ui-serif, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --color-forest: #1a3d2a;
+  --color-forest-deep: #0f2719;
+  --color-forest-soft: #2a5a3d;
+  --color-cream: #f5f3f0;
+  --color-cream-card: #fbf9f5;
+  --color-cream-muted: #ede9e2;
+  --color-amber: #d4a574;
+  --color-amber-soft: #e8cfa8;
+  --color-amber-deep: #a8803f;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    background-color: #f5f3f0;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ============================================================
+   EDITORIAL UTILITY CLASSES
+   ============================================================ */
+
+/* Microprinting - tiny uppercase tracked type used on documents */
+.kv-microprint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.kv-microprint-sm {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Editorial serif display */
+.kv-display {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+/* Paper texture - subtle noise overlay */
+.kv-paper {
+  background-color: var(--kv-cream);
+  background-image:
+    radial-gradient(rgba(26, 61, 42, 0.025) 0.6px, transparent 0.6px);
+  background-size: 3px 3px;
+}
+
+/* Passport security pattern - diagonal cross-hatch */
+.kv-passport-pattern {
+  background-color: var(--kv-forest);
+  background-image:
+    linear-gradient(135deg, rgba(245, 243, 240, 0.04) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(245, 243, 240, 0.04) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(245, 243, 240, 0.04) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(245, 243, 240, 0.04) 25%, transparent 25%);
+  background-position: 12px 0, 12px 0, 0 0, 0 0;
+  background-size: 24px 24px;
+}
+
+/* Guilloché-style radial security pattern */
+.kv-guilloche {
+  background-image:
+    repeating-radial-gradient(circle at 20% 30%, rgba(245, 243, 240, 0.03) 0, rgba(245, 243, 240, 0.03) 1px, transparent 1px, transparent 12px),
+    repeating-radial-gradient(circle at 80% 70%, rgba(212, 165, 116, 0.05) 0, rgba(212, 165, 116, 0.05) 1px, transparent 1px, transparent 18px);
+}
+
+/* MRZ strip - machine readable zone (bottom of passport) */
+.kv-mrz {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  font-weight: 500;
+  line-height: 1.8;
+  word-break: break-all;
+  color: rgba(245, 243, 240, 0.72);
+}
+
+.kv-mrz-light {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  font-weight: 500;
+  line-height: 1.8;
+  color: var(--kv-forest);
+  opacity: 0.55;
+  word-break: break-all;
+}
+
+/* Document corner - triangular corner stamp */
+.kv-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--kv-amber);
+}
+
+.kv-corner-tl {
+  top: 8px;
+  left: 8px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.kv-corner-tr {
+  top: 8px;
+  right: 8px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.kv-corner-bl {
+  bottom: 8px;
+  left: 8px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.kv-corner-br {
+  bottom: 8px;
+  right: 8px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* Section label - uppercase mono with underline */
+.kv-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--kv-forest);
+  opacity: 0.7;
+}
+
+/* Editorial card - paper-like with warm border */
+.kv-card {
+  background: var(--kv-cream-card);
+  border: 1px solid var(--kv-border);
+  border-radius: 4px;
+}
+
+/* Amber verification glow - subtle */
+.kv-verified-glow {
+  box-shadow:
+    0 0 0 1px rgba(212, 165, 116, 0.5),
+    0 0 20px rgba(212, 165, 116, 0.25);
+}
+
+/* Stamp rotation for ink-stamp aesthetic */
+.kv-stamp {
+  transform: rotate(-4deg);
+  border: 2px solid var(--kv-rust);
+  color: var(--kv-rust);
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-weight: 700;
+  display: inline-block;
+  opacity: 0.85;
+}
+
+/* Hairline divider */
+.kv-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--kv-border), transparent);
+}
+
+.kv-divider-forest {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(245, 243, 240, 0.3), transparent);
+}
+
+/* Horizontal rule with notched ends (editorial) */
+.kv-rule {
+  border: none;
+  border-top: 1px solid var(--kv-border);
+  position: relative;
+}
+
+/* Dashed underline for document-like inputs */
+.kv-dashed-underline {
+  border-bottom: 1px dashed var(--kv-border);
+}
+
+/* Ticket-perforation edge */
+.kv-perforation {
+  background-image: radial-gradient(circle, var(--kv-border) 1px, transparent 1.5px);
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+  height: 1px;
+}
+
+/* Amber highlight for verified items */
+.kv-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 165, 116, 0.15);
+  border: 1px solid rgba(212, 165, 116, 0.45);
+  color: var(--kv-amber-deep);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Softened pulsing dot for live indicators */
+@keyframes kv-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(1.35);
+  }
+}
+
+.kv-pulse-dot {
+  animation: kv-pulse 1.8s ease-in-out infinite;
+}
+
+/* Soft amber recommendation glow */
+@keyframes kv-glow-amber {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(212, 165, 116, 0.35), 0 0 24px -4px rgba(212, 165, 116, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(212, 165, 116, 0.55), 0 0 32px -2px rgba(212, 165, 116, 0.5);
+  }
+}
+
+.kv-glow-amber {
+  animation: kv-glow-amber 3s ease-in-out infinite;
+}
+
+@keyframes kv-glow-forest {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(26, 61, 42, 0.3), 0 0 24px -4px rgba(26, 61, 42, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(26, 61, 42, 0.5), 0 0 32px -2px rgba(26, 61, 42, 0.32);
+  }
+}
+
+.kv-glow-forest {
+  animation: kv-glow-forest 3s ease-in-out infinite;
+}
+
+/* Keep legacy animations for any lingering usage (map to editorial) */
+@keyframes glow-amber {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(212, 165, 116, 0.4), 0 0 22px -4px rgba(212, 165, 116, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(212, 165, 116, 0.6), 0 0 30px -2px rgba(212, 165, 116, 0.55);
+  }
+}
+
+@keyframes glow-green {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(26, 61, 42, 0.3), 0 0 22px -4px rgba(26, 61, 42, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 0 1px rgba(26, 61, 42, 0.5), 0 0 30px -2px rgba(26, 61, 42, 0.32);
+  }
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(1.25);
+  }
+}
+
+.glow-amber {
+  animation: glow-amber 3s ease-in-out infinite;
+}
+
+.glow-green {
+  animation: glow-green 3s ease-in-out infinite;
+}
+
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* Themed scrollbar for large editorial modals */
+.bill-modal-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--kv-amber) var(--kv-cream-muted);
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar-track {
+  border-radius: 9999px;
+  background: var(--kv-cream-muted);
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid var(--kv-cream-muted);
+  border-radius: 9999px;
+  background: linear-gradient(180deg, var(--kv-amber), var(--kv-amber-deep));
+}
+
+.bill-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--kv-amber-deep), var(--kv-forest));
+}
+
+/* ============================================================
+   LANDING PAGE (dark-theme) UTILITIES — PRESERVED AS-IS
+   Landing page renders outside of the KAVACH light system.
+   ============================================================ */
+
+.landing-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.96), transparent 84%);
+}
+
+.landing-aurora {
+  background:
+    radial-gradient(circle at 15% 14%, rgba(255, 255, 255, 0.09), transparent 42%),
+    radial-gradient(circle at 84% 24%, rgba(166, 214, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 53% 82%, rgba(89, 156, 255, 0.11), transparent 48%);
+}
+
+.landing-noise-overlay {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.11) 0.55px, transparent 0.55px);
+  background-size: 3px 3px;
+  opacity: 0.14;
+  mix-blend-mode: soft-light;
+}
+
+.landing-scene-shell {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.04), transparent 68%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), inset 0 0 80px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(1px);
+}
+
+.landing-perspective {
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
+}
+
+.landing-card-3d {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.landing-horizontal-viewport::before,
+.landing-horizontal-viewport::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 44px;
+}
+
+.landing-horizontal-viewport::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(5, 5, 5, 0.9), transparent);
+}
+
+.landing-horizontal-viewport::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(5, 5, 5, 0.9), transparent);
+}
+
+@media (max-width: 768px) {
+  .landing-scene-shell {
+    border-radius: 24px;
+  }
+}

@@ -1,0 +1,45 @@
+import { Truck } from "lucide-react"
+import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
+import { SuppliesTable } from "@/components/supplies/supplies-table"
+
+export default function SuppliesPage() {
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="kv-page-reveal flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <p className="kv-microprint text-muted-foreground">Section 04 · Supply Intake</p>
+            <h1
+              className="mt-2 text-5xl text-forest"
+              style={{ fontFamily: "var(--font-serif)", fontWeight: 500, lineHeight: 1, letterSpacing: "-0.025em" }}
+            >
+              Supplies
+            </h1>
+            <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+              Capture incoming supply entries, item-wise quantities, and their linked bills. Every
+              line is notarized in the ledger immediately.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-cream-card px-4 py-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-forest text-cream">
+              <Truck className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="kv-microprint-sm text-muted-foreground">Module</p>
+              <p
+                className="text-sm text-forest"
+                style={{ fontFamily: "var(--font-serif)", fontWeight: 600 }}
+              >
+                SP · Bill Capture
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="kv-page-reveal">
+          <SuppliesTable />
+        </div>
+      </div>
+    </DashboardLayout>
+  )
+}
