@@ -127,9 +127,9 @@ function formatShortDate(input: string | null): string {
 }
 
 function getBalanceColor(balance: number) {
-  if (balance < 5000) return "text-emerald-400"
-  if (balance <= 15000) return "text-amber-400"
-  return "text-red-400"
+  if (balance < 5000) return "text-forest"
+  if (balance <= 15000) return "text-amber-deep"
+  return "text-destructive"
 }
 
 async function fetchHydratedVendors(userId: string): Promise<UiVendor[]> {
@@ -427,13 +427,13 @@ export function VendorsTable() {
         : "Failed to load vendors"
 
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-300">
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
         <p>{message}</p>
         <Button
           type="button"
           variant="outline"
           onClick={() => void vendorsQuery.refetch()}
-          className="mt-3 border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+          className="mt-3 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
         >
           Retry
         </Button>
@@ -460,7 +460,7 @@ export function VendorsTable() {
               setAddError(null)
               setAddDialogOpen(true)
             }}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            className="bg-forest text-cream hover:bg-forest-deep"
           >
             Add Vendor
           </Button>
@@ -502,7 +502,7 @@ export function VendorsTable() {
       </div>
 
       {mutationError && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {mutationError}
         </div>
       )}
@@ -555,11 +555,11 @@ export function VendorsTable() {
                     className={cn(
                       "text-xs",
                       vendor.toleranceLevel === "LOW" &&
-                        "border-red-500/30 bg-red-500/10 text-red-400",
+                        "border-destructive/30 bg-destructive/10 text-destructive",
                       vendor.toleranceLevel === "MEDIUM" &&
-                        "border-amber-500/30 bg-amber-500/10 text-amber-400",
+                        "border-amber/30 bg-amber/12 text-amber-deep",
                       vendor.toleranceLevel === "HIGH" &&
-                        "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        "border-forest/30 bg-forest/10 text-forest"
                     )}
                   >
                     {vendor.toleranceLevel}
@@ -669,7 +669,7 @@ export function VendorsTable() {
                         size="sm"
                         disabled={addCommodityRows.length === 1}
                         onClick={() => removeCommodityRow(row.id)}
-                        className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
                         Remove
                       </Button>
@@ -689,7 +689,7 @@ export function VendorsTable() {
                         className={cn(
                           "border-border/60 transition-all",
                           row.mode === "existing"
-                            ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
+                            ? "border-forest/40 bg-forest/10 text-forest hover:bg-forest/15"
                             : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                         )}
                       >
@@ -708,7 +708,7 @@ export function VendorsTable() {
                         className={cn(
                           "border-border/60 transition-all",
                           row.mode === "new"
-                            ? "border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/20"
+                            ? "border-amber/40 bg-amber/15 text-amber-deep hover:bg-amber/20"
                             : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                         )}
                       >
@@ -798,7 +798,7 @@ export function VendorsTable() {
               </div>
             </div>
             {addError && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 {addError}
               </div>
             )}
@@ -814,7 +814,7 @@ export function VendorsTable() {
               <Button
                 type="submit"
                 disabled={addVendorMutation.isPending}
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                className="bg-forest text-cream hover:bg-forest-deep"
               >
                 {addVendorMutation.isPending ? "Saving..." : "Save Vendor"}
               </Button>

@@ -403,7 +403,7 @@ export function AddBillDialog({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-card-foreground">
-                  <ReceiptText className="h-6 w-6 text-emerald-400" />
+                  <ReceiptText className="h-6 w-6 text-forest" />
                   Add New Bill
                 </DialogTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -524,7 +524,7 @@ export function AddBillDialog({
                             className="rounded-lg border border-border/50 bg-card/35 p-3"
                           >
                             <div className="mb-3 flex items-center justify-between gap-2">
-                              <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-300">
+                              <Badge variant="outline" className="border-amber/30 bg-amber/12 text-amber-deep">
                                 Item {index + 1}
                               </Badge>
                               <Button
@@ -533,7 +533,7 @@ export function AddBillDialog({
                                 size="sm"
                                 onClick={() => removeDraftItem(item.id)}
                                 disabled={items.length === 1}
-                                className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="mr-1 h-3.5 w-3.5" />
                                 Remove
@@ -555,7 +555,7 @@ export function AddBillDialog({
                                       className={cn(
                                         "border-border/60",
                                         item.commodityMode === "existing"
-                                          ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+                                          ? "border-forest/50 bg-forest/12 text-forest"
                                           : "bg-secondary"
                                       )}
                                     >
@@ -568,7 +568,7 @@ export function AddBillDialog({
                                       className={cn(
                                         "border-border/60",
                                         item.commodityMode === "new"
-                                          ? "border-blue-500/50 bg-blue-500/15 text-blue-300"
+                                          ? "border-amber/50 bg-amber/20 text-amber-deep"
                                           : "bg-secondary"
                                       )}
                                     >
@@ -722,7 +722,7 @@ export function AddBillDialog({
                       </div>
                       <div className="flex items-center justify-between text-muted-foreground">
                         <span>Paid Amount</span>
-                        <span className="font-mono text-emerald-300">
+                        <span className="font-mono text-forest">
                           {formatCurrency(paidAmountNumber)}
                         </span>
                       </div>
@@ -743,7 +743,7 @@ export function AddBillDialog({
                   </div>
 
                   {formError && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                       {formError}
                     </div>
                   )}
@@ -764,7 +764,7 @@ export function AddBillDialog({
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  className="bg-forest text-cream hover:bg-forest-deep"
                   disabled={createBillMutation.isPending || !selectedVendorId}
                 >
                   {createBillMutation.isPending ? "Creating Bill..." : "Create Bill"}

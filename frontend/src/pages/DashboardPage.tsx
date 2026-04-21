@@ -89,7 +89,7 @@ export default function DashboardPage() {
         {/* Two-column identity pass + connected platforms */}
         <div className="grid gap-6 lg:grid-cols-[1.45fr_1fr]">
           {/* Identity Pass — editorial passport card */}
-          <div className="kv-page-reveal kv-passport-pattern relative overflow-hidden rounded-xl text-cream">
+          <div className="kv-page-reveal kv-passport-pro relative overflow-hidden rounded-xl text-cream shadow-[0_20px_55px_-28px_rgba(15,39,25,0.75)]">
             {/* Header strip */}
             <div className="flex items-center justify-between border-b border-cream/15 px-6 py-4">
               <div className="flex items-center gap-2">
@@ -141,9 +141,9 @@ export default function DashboardPage() {
 
               {/* QR surrogate panel */}
               <div className="flex flex-col items-center justify-start">
-                <div className="relative flex h-36 w-36 items-center justify-center rounded-md bg-cream p-2 shadow-md">
+                <div className="kv-qr-float relative flex h-36 w-36 items-center justify-center rounded-md bg-cream p-2 shadow-md">
                   {/* Simulated QR pattern using grid */}
-                  <div className="grid h-full w-full grid-cols-8 grid-rows-8 gap-[2px]">
+                  <div className="grid h-full w-full grid-cols-8 grid-rows-8 gap-0.5">
                     {Array.from({ length: 64 }).map((_, i) => {
                       // Deterministic pattern based on handle + index
                       const seed = (handle.charCodeAt((i % handle.length) || 0) + i * 7) % 13

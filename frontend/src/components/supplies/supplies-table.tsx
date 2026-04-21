@@ -50,9 +50,9 @@ function asNumber(value: number | string): number {
 }
 
 function getBalanceColor(balance: number) {
-  if (balance < 5000) return "text-emerald-400"
-  if (balance <= 15000) return "text-amber-400"
-  return "text-red-400"
+  if (balance < 5000) return "text-forest"
+  if (balance <= 15000) return "text-amber-deep"
+  return "text-destructive"
 }
 
 function formatDate(input?: string): string {
@@ -164,7 +164,7 @@ export function SuppliesTable() {
         </Button>
         <Button
           onClick={() => setDialogOpen(true)}
-          className="bg-emerald-600 text-white hover:bg-emerald-700"
+          className="bg-forest text-cream hover:bg-forest-deep"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add New Bill
@@ -178,7 +178,7 @@ export function SuppliesTable() {
       )}
 
       {isError && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-300">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
           <p>{errorMessage}</p>
           <Button
             type="button"
@@ -187,7 +187,7 @@ export function SuppliesTable() {
               void vendorsQuery.refetch()
               void billsQuery.refetch()
             }}
-            className="mt-3 border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+            className="mt-3 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
           >
             Retry
           </Button>
@@ -224,7 +224,7 @@ export function SuppliesTable() {
                   <TableCell className="text-right font-mono font-semibold text-amber-400">
                     ₹{row.totalAmount.toLocaleString("en-IN")}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-emerald-400">
+                  <TableCell className="text-right font-mono text-forest">
                     ₹{row.paidAmount.toLocaleString("en-IN")}
                   </TableCell>
                   <TableCell
@@ -276,7 +276,7 @@ export function SuppliesTable() {
                   </div>
                   <div className="rounded-lg border border-border/50 bg-secondary/30 p-3">
                     <p className="text-xs text-muted-foreground">Paid</p>
-                    <p className="font-mono font-semibold text-emerald-300">₹{asNumber(selectedBill.paid_amount).toLocaleString("en-IN")}</p>
+                    <p className="font-mono font-semibold text-forest">₹{asNumber(selectedBill.paid_amount).toLocaleString("en-IN")}</p>
                   </div>
                   <div className="rounded-lg border border-border/50 bg-secondary/30 p-3">
                     <p className="text-xs text-muted-foreground">Pending</p>

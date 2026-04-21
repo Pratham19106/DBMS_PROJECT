@@ -48,15 +48,15 @@ function getCommodityIcon(name: string): string {
 }
 
 function getStockColor(percentage: number) {
-  if (percentage <= 50) return "bg-red-500"
-  if (percentage <= 80) return "bg-amber-500"
-  return "bg-emerald-500"
+  if (percentage <= 50) return "bg-destructive"
+  if (percentage <= 80) return "bg-amber"
+  return "bg-forest"
 }
 
 function getStockStatus(percentage: number) {
-  if (percentage <= 50) return { label: "CRITICAL", color: "text-red-400" }
-  if (percentage <= 80) return { label: "LOW", color: "text-amber-400" }
-  return { label: "OK", color: "text-emerald-400" }
+  if (percentage <= 50) return { label: "CRITICAL", color: "text-destructive" }
+  if (percentage <= 80) return { label: "LOW", color: "text-amber-deep" }
+  return { label: "OK", color: "text-forest" }
 }
 
 export function StockCards() {
@@ -134,7 +134,7 @@ export function StockCards() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-300">
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
         {error}
       </div>
     )
@@ -204,7 +204,7 @@ export function StockCards() {
             key={commodity.id}
             className={cn(
               "border-border/50 bg-card transition-all hover:border-white/20",
-              percentage <= 50 && "border-amber-500/30"
+              percentage <= 50 && "border-destructive/30"
             )}
           >
             <CardHeader className="pb-2">
@@ -295,7 +295,7 @@ export function StockCards() {
                   </div>
 
                   {priorityState.error && (
-                    <p className="text-xs text-red-300">{priorityState.error}</p>
+                    <p className="text-xs text-destructive">{priorityState.error}</p>
                   )}
 
                   {!priorityState.loading && !priorityState.error && priorityState.vendors.length === 0 && (
@@ -317,7 +317,7 @@ export function StockCards() {
                               Pending: ₹{Number(vendor.pending_debt || 0).toLocaleString("en-IN")}
                             </p>
                           </div>
-                          <Badge className="bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/20">
+                          <Badge className="border border-forest/35 bg-forest/10 text-forest hover:bg-forest/12">
                             Score {Number(vendor.overall_score || 0).toFixed(1)}
                           </Badge>
                         </div>

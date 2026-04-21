@@ -127,7 +127,7 @@ export function AddPaymentForm() {
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold text-card-foreground">
-          <PlusCircle className="h-5 w-5 text-emerald-500" />
+          <PlusCircle className="h-5 w-5 text-forest" />
           Add New Payment
         </CardTitle>
       </CardHeader>
@@ -204,20 +204,20 @@ export function AddPaymentForm() {
           <Button
             type="submit"
             disabled={addPaymentMutation.isPending}
-            className="md:col-span-1 bg-emerald-600 text-white hover:bg-emerald-700"
+            className="md:col-span-1 bg-forest text-cream hover:bg-forest-deep"
           >
             {addPaymentMutation.isPending ? "Adding..." : "Add Payment"}
           </Button>
         </form>
 
         {errorText && (
-          <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {errorText}
           </div>
         )}
 
         {successText && (
-          <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <div className="mt-3 rounded-md border border-forest/30 bg-forest/10 px-3 py-2 text-sm text-forest">
             {successText}
           </div>
         )}

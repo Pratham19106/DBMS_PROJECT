@@ -231,6 +231,105 @@
   background-size: 24px 24px;
 }
 
+/* Professional passport shell - cleaner, less texture, subtle motion */
+.kv-passport-pro {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(120% 95% at 12% 8%, rgba(212, 165, 116, 0.08), transparent 56%),
+    radial-gradient(90% 80% at 88% 100%, rgba(245, 243, 240, 0.06), transparent 60%),
+    linear-gradient(155deg, #0f2719 0%, #17422d 52%, #123723 100%);
+}
+
+.kv-passport-pro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.26;
+  background-image:
+    linear-gradient(145deg, rgba(245, 243, 240, 0.08) 0%, transparent 28%, transparent 72%, rgba(212, 165, 116, 0.12) 100%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(245, 243, 240, 0.035) 0,
+      rgba(245, 243, 240, 0.035) 1px,
+      transparent 1px,
+      transparent 19px
+    );
+}
+
+.kv-passport-pro::after {
+  content: "";
+  position: absolute;
+  top: -140%;
+  left: -45%;
+  width: 58%;
+  height: 320%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  transform: rotate(18deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 243, 240, 0.02) 34%,
+    rgba(245, 243, 240, 0.16) 50%,
+    rgba(245, 243, 240, 0.02) 66%,
+    transparent 100%
+  );
+  animation: kv-passport-sheen 8.5s ease-in-out infinite;
+}
+
+/* Keep card content above animated overlays */
+.kv-passport-pro > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes kv-passport-sheen {
+  0% {
+    transform: translateX(-8%) rotate(18deg);
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 0.16;
+  }
+
+  48% {
+    transform: translateX(205%) rotate(18deg);
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translateX(205%) rotate(18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes kv-float-soft {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.kv-qr-float {
+  animation: kv-float-soft 4.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kv-passport-pro::after,
+  .kv-qr-float {
+    animation: none;
+  }
+}
+
 /* Guilloché-style radial security pattern */
 .kv-guilloche {
   background-image:

@@ -189,7 +189,7 @@ export function VendorDrawer({
                   variant="outline"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:text-red-200"
+                  className="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   {deleting ? "Deleting..." : "Delete Vendor"}
@@ -211,16 +211,16 @@ export function VendorDrawer({
                 variant="outline"
                 className={cn(
                   vendor.toleranceLevel === "LOW" &&
-                    "border-red-500/30 bg-red-500/10 text-red-400",
+                    "border-destructive/30 bg-destructive/10 text-destructive",
                   vendor.toleranceLevel === "MEDIUM" &&
-                    "border-amber-500/30 bg-amber-500/10 text-amber-400",
+                    "border-amber/30 bg-amber/12 text-amber-deep",
                   vendor.toleranceLevel === "HIGH" &&
-                    "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                    "border-forest/30 bg-forest/10 text-forest"
                 )}
               >
                 Tolerance: {vendor.toleranceLevel}
               </Badge>
-              <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-300">
+              <Badge variant="outline" className="border-amber/30 bg-amber/12 text-amber-deep">
                 Outstanding: ₹{vendor.outstandingBalance.toLocaleString("en-IN")}
               </Badge>
             </div>
@@ -252,7 +252,7 @@ export function VendorDrawer({
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    className="bg-forest text-cream hover:bg-forest-deep"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </Button>
@@ -261,13 +261,13 @@ export function VendorDrawer({
             )}
 
             {saveError && (
-              <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-300">
+              <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
                 {saveError}
               </div>
             )}
 
             {deleteError && (
-              <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-300">
+              <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
                 {deleteError}
               </div>
             )}
@@ -337,7 +337,7 @@ export function VendorDrawer({
                               <p className="text-sm font-medium text-card-foreground">
                                 {payment.payment_mode.toUpperCase()} payment
                               </p>
-                              <p className="font-mono text-sm text-red-300">
+                              <p className="font-mono text-sm text-destructive">
                                 -₹{asNumber(payment.amount).toLocaleString("en-IN")}
                               </p>
                             </div>
@@ -365,7 +365,7 @@ export function VendorDrawer({
                           >
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-sm font-medium text-card-foreground">Bill #{shortBillId(entry.id)}</p>
-                              <p className="font-mono text-sm text-emerald-400">
+                              <p className="font-mono text-sm text-forest">
                                 ₹{asNumber(entry.total_amount).toLocaleString("en-IN")}
                               </p>
                             </div>

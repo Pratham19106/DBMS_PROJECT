@@ -160,19 +160,19 @@ function getLocalMonthValue(date = new Date()): string {
 }
 
 function getTrendTone(trend: BackendDailyLogAnalyticsResponse["summary"]["trend_direction"]): string {
-  if (trend === "improving") return "text-emerald-300"
-  if (trend === "declining") return "text-rose-300"
-  return "text-amber-300"
+  if (trend === "improving") return "text-forest"
+  if (trend === "declining") return "text-destructive"
+  return "text-amber-deep"
 }
 
 function getInsightStyle(type: "good" | "warning" | "neutral"): string {
   if (type === "good") {
-    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+    return "border-forest/30 bg-forest/5 text-forest"
   }
   if (type === "warning") {
-    return "border-rose-500/30 bg-rose-500/10 text-rose-200"
+    return "border-destructive/30 bg-destructive/5 text-destructive"
   }
-  return "border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
+  return "border-amber/40 bg-amber/10 text-amber-deep"
 }
 
 export default function DailyLogsPage() {
@@ -556,7 +556,7 @@ export default function DailyLogsPage() {
         <Card className="border-border/50 bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-card-foreground">
-              <ClipboardList className="h-5 w-5 text-cyan-400" />
+              <ClipboardList className="h-5 w-5 text-forest" />
               Financial Log
             </CardTitle>
           </CardHeader>
@@ -573,7 +573,7 @@ export default function DailyLogsPage() {
                       className={cn(
                         "border-border/60",
                         logType === "received"
-                          ? "border-cyan-500/50 bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/20"
+                          ? "border-forest/40 bg-forest/10 text-forest hover:bg-forest/15"
                           : "bg-secondary/70 text-muted-foreground hover:bg-secondary"
                       )}
                     >
@@ -586,7 +586,7 @@ export default function DailyLogsPage() {
                       className={cn(
                         "border-border/60",
                         logType === "paid"
-                          ? "border-rose-500/50 bg-rose-500/15 text-rose-300 hover:bg-rose-500/20"
+                          ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15"
                           : "bg-secondary/70 text-muted-foreground hover:bg-secondary"
                       )}
                     >
@@ -613,14 +613,14 @@ export default function DailyLogsPage() {
               </div>
 
               {logType === "paid" && (
-                <div className="rounded-lg border border-rose-500/25 bg-rose-500/8 p-3">
+                <div className="rounded-lg border border-destructive/25 bg-destructive/8 p-3">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-rose-200">Today Payment Summary</p>
-                    <Badge className="border-rose-500/40 bg-rose-500/10 text-rose-200 hover:bg-rose-500/10">
+                    <p className="text-sm font-semibold text-destructive">Today Payment Summary</p>
+                    <Badge className="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/10">
                       {todayPaidSummary.count} payments today
                     </Badge>
                   </div>
-                  <div className="mb-2 flex flex-wrap gap-3 text-sm text-rose-100">
+                  <div className="mb-2 flex flex-wrap gap-3 text-sm text-destructive/80">
                     <span>Total Outflow Today: ₹{todayPaidSummary.totalOutflow.toLocaleString("en-IN")}</span>
                     <span>Vendors Covered: {todayPaidSummary.vendorBreakdown.length}</span>
                     <span>Methods Used: {todayPaidSummary.methodBreakdown.length}</span>
@@ -630,37 +630,37 @@ export default function DailyLogsPage() {
                     {todayPaidSummary.vendorBreakdown.map((vendor) => (
                       <div
                         key={vendor.vendorName}
-                        className="flex items-center justify-between rounded-md border border-rose-500/20 bg-rose-500/5 px-2 py-1.5 text-xs"
+                        className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 px-2 py-1.5 text-xs"
                       >
-                        <span className="text-rose-100">{vendor.vendorName}</span>
-                        <span className="font-mono text-rose-200">
+                        <span className="text-destructive/80">{vendor.vendorName}</span>
+                        <span className="font-mono text-destructive">
                           ₹{vendor.amount.toLocaleString("en-IN")} ({vendor.count})
                         </span>
                       </div>
                     ))}
                     {todayPaidSummary.vendorBreakdown.length === 0 && (
-                      <p className="text-xs text-rose-200/80">No payments recorded for today yet.</p>
+                      <p className="text-xs text-destructive/70">No payments recorded for today yet.</p>
                     )}
                   </div>
 
                   <div className="mt-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-200">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive/80">
                       By Payment Method
                     </p>
                     <div className="space-y-1">
                       {todayPaidSummary.methodBreakdown.map((method) => (
                         <div
                           key={method.method}
-                          className="flex items-center justify-between rounded-md border border-rose-500/20 bg-rose-500/5 px-2 py-1.5 text-xs"
+                          className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 px-2 py-1.5 text-xs"
                         >
-                          <span className="text-rose-100">{method.method}</span>
-                          <span className="font-mono text-rose-200">
+                          <span className="text-destructive/80">{method.method}</span>
+                          <span className="font-mono text-destructive">
                             ₹{method.amount.toLocaleString("en-IN")} ({method.count})
                           </span>
                         </div>
                       ))}
                       {todayPaidSummary.methodBreakdown.length === 0 && (
-                        <p className="text-xs text-rose-200/80">No method data found for today.</p>
+                        <p className="text-xs text-destructive/70">No method data found for today.</p>
                       )}
                     </div>
                   </div>
@@ -672,7 +672,7 @@ export default function DailyLogsPage() {
                   <Button
                     type="submit"
                     disabled={financialMutation.isPending}
-                    className="bg-cyan-600 text-white hover:bg-cyan-700"
+                    className="bg-forest text-cream hover:bg-forest-deep"
                   >
                     {financialMutation.isPending ? "Saving..." : "Save Financial Log"}
                   </Button>
@@ -703,7 +703,7 @@ export default function DailyLogsPage() {
             )}
 
             {financeSuccessText && (
-              <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              <div className="mt-3 rounded-md border border-forest/30 bg-forest/8 px-3 py-2 text-sm text-forest">
                 {financeSuccessText}
               </div>
             )}
@@ -808,7 +808,7 @@ export default function DailyLogsPage() {
                 <Button
                   type="submit"
                   disabled={commodityMutation.isPending}
-                  className="bg-indigo-600 text-white hover:bg-indigo-700"
+                  className="bg-amber text-forest hover:bg-amber-deep"
                 >
                   {commodityMutation.isPending ? "Applying..." : "Apply Commodity Updates"}
                 </Button>
@@ -831,7 +831,7 @@ export default function DailyLogsPage() {
             )}
 
             {commoditySuccessText && (
-              <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              <div className="mt-3 rounded-md border border-forest/30 bg-forest/8 px-3 py-2 text-sm text-forest">
                 {commoditySuccessText}
               </div>
             )}
@@ -841,7 +841,7 @@ export default function DailyLogsPage() {
         <Card className="border-border/50 bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-card-foreground">
-              <TrendingUp className="h-5 w-5 text-indigo-300" />
+              <TrendingUp className="h-5 w-5 text-amber" />
               Past Logs Analytics
             </CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -893,7 +893,7 @@ export default function DailyLogsPage() {
                       className="bg-secondary"
                     />
                     {!isYearValid && (
-                      <p className="text-xs text-rose-300">Enter a year between 2000 and 2200.</p>
+                      <p className="text-xs text-destructive">Enter a year between 2000 and 2200.</p>
                     )}
                   </div>
                 )}
@@ -927,32 +927,32 @@ export default function DailyLogsPage() {
             {!analyticsQuery.isLoading && !analyticsQuery.isError && analyticsQuery.data && (
               <>
                 <div className="grid gap-3 md:grid-cols-4">
-                  <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-3">
-                    <p className="text-xs uppercase tracking-wide text-cyan-200/90">Received</p>
-                    <p className="mt-1 font-mono text-lg font-semibold text-cyan-200">
+                  <div className="rounded-lg border border-forest/30 bg-forest/8 p-3">
+                    <p className="text-xs uppercase tracking-wide text-forest/80">Received</p>
+                    <p className="mt-1 font-mono text-lg font-semibold text-forest">
                       Rs {analyticsQuery.data.summary.total_received.toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
-                    <p className="text-xs uppercase tracking-wide text-rose-200/90">Paid</p>
-                    <p className="mt-1 font-mono text-lg font-semibold text-rose-200">
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/8 p-3">
+                    <p className="text-xs uppercase tracking-wide text-destructive/80">Paid</p>
+                    <p className="mt-1 font-mono text-lg font-semibold text-destructive">
                       Rs {analyticsQuery.data.summary.total_paid.toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-3">
-                    <p className="text-xs uppercase tracking-wide text-indigo-200/90">Net Balance</p>
+                  <div className="rounded-lg border border-amber/30 bg-amber/10 p-3">
+                    <p className="text-xs uppercase tracking-wide text-amber-deep/90">Net Balance</p>
                     <p
                       className={cn(
                         "mt-1 font-mono text-lg font-semibold",
-                        analyticsQuery.data.summary.net_balance >= 0 ? "text-emerald-300" : "text-rose-300"
+                        analyticsQuery.data.summary.net_balance >= 0 ? "text-forest" : "text-destructive"
                       )}
                     >
                       Rs {analyticsQuery.data.summary.net_balance.toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                    <p className="text-xs uppercase tracking-wide text-amber-200/90">Transactions</p>
-                    <p className="mt-1 font-mono text-lg font-semibold text-amber-200">
+                  <div className="rounded-lg border border-amber/30 bg-amber/10 p-3">
+                    <p className="text-xs uppercase tracking-wide text-amber-deep/90">Transactions</p>
+                    <p className="mt-1 font-mono text-lg font-semibold text-amber-deep">
                       {analyticsQuery.data.summary.transaction_count.toLocaleString("en-IN")}
                     </p>
                     <p className={cn("mt-1 text-xs", getTrendTone(analyticsQuery.data.summary.trend_direction))}>
@@ -964,33 +964,36 @@ export default function DailyLogsPage() {
                 <div className="h-80 w-full rounded-lg border border-border/50 bg-secondary/15 p-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={analyticsChartData} margin={{ top: 12, right: 16, left: 0, bottom: 6 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 61, 42, 0.1)" />
                       <XAxis
                         dataKey="bucketLabel"
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
-                        axisLine={{ stroke: "rgba(148, 163, 184, 0.4)" }}
-                        tickLine={{ stroke: "rgba(148, 163, 184, 0.4)" }}
+                        tick={{ fill: "#5a6b5e", fontSize: 12 }}
+                        axisLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
+                        tickLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
                       />
                       <YAxis
                         yAxisId="amount"
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
-                        axisLine={{ stroke: "rgba(148, 163, 184, 0.4)" }}
-                        tickLine={{ stroke: "rgba(148, 163, 184, 0.4)" }}
+                        tick={{ fill: "#5a6b5e", fontSize: 12 }}
+                        axisLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
+                        tickLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
                         tickFormatter={(value) => `Rs ${Number(value).toLocaleString("en-IN")}`}
                       />
                       <YAxis
                         yAxisId="count"
                         orientation="right"
                         allowDecimals={false}
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
-                        axisLine={{ stroke: "rgba(148, 163, 184, 0.4)" }}
-                        tickLine={{ stroke: "rgba(148, 163, 184, 0.4)" }}
+                        tick={{ fill: "#5a6b5e", fontSize: 12 }}
+                        axisLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
+                        tickLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#0f172a",
-                          border: "1px solid rgba(148,163,184,0.35)",
+                          backgroundColor: "#fbf9f5",
+                          border: "1px solid #d6d0c4",
                           borderRadius: "10px",
+                          color: "#1a3d2a",
+                          fontFamily: "JetBrains Mono, monospace",
+                          fontSize: "12px",
                         }}
                         formatter={(value, name) => {
                           if (name === "Transactions") {
@@ -1000,13 +1003,13 @@ export default function DailyLogsPage() {
                         }}
                       />
                       <Legend />
-                      <Bar yAxisId="amount" dataKey="paid" name="Paid" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                      <Bar yAxisId="amount" dataKey="paid" name="Paid" fill="#a13b2b" radius={[4, 4, 0, 0]} />
                       <Line
                         yAxisId="amount"
                         type="monotone"
                         dataKey="received"
                         name="Received"
-                        stroke="#06b6d4"
+                        stroke="#1a3d2a"
                         strokeWidth={2}
                         dot={false}
                       />
@@ -1015,7 +1018,7 @@ export default function DailyLogsPage() {
                         type="monotone"
                         dataKey="net"
                         name="Net"
-                        stroke="#f59e0b"
+                        stroke="#d4a574"
                         strokeWidth={2}
                         dot={false}
                       />
@@ -1024,7 +1027,7 @@ export default function DailyLogsPage() {
                         type="monotone"
                         dataKey="transactions"
                         name="Transactions"
-                        stroke="#a78bfa"
+                        stroke="#2a5a3d"
                         strokeWidth={1.5}
                         strokeDasharray="4 4"
                         dot={false}
@@ -1070,8 +1073,8 @@ export default function DailyLogsPage() {
                             className={cn(
                               "border",
                               entry.log_type === "received"
-                                ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                                : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                                ? "border-forest/40 bg-forest/10 text-forest"
+                                : "border-destructive/40 bg-destructive/10 text-destructive"
                             )}
                           >
                             {entry.log_type}
@@ -1079,7 +1082,7 @@ export default function DailyLogsPage() {
                           <span
                             className={cn(
                               "font-mono",
-                              entry.log_type === "received" ? "text-cyan-300" : "text-rose-300"
+                              entry.log_type === "received" ? "text-forest" : "text-destructive"
                             )}
                           >
                             Rs {Number(entry.amount).toLocaleString("en-IN")}
@@ -1111,9 +1114,9 @@ export default function DailyLogsPage() {
               >
                 <div className="flex items-center gap-2">
                   {log.type === "received" ? (
-                    <ArrowDownCircle className="h-4 w-4 text-cyan-300" />
+                    <ArrowDownCircle className="h-4 w-4 text-forest" />
                   ) : (
-                    <ArrowUpCircle className="h-4 w-4 text-rose-300" />
+                    <ArrowUpCircle className="h-4 w-4 text-destructive" />
                   )}
                   <div>
                     <p className="text-sm font-medium text-card-foreground">
@@ -1131,8 +1134,8 @@ export default function DailyLogsPage() {
                     className={cn(
                       "border",
                       log.type === "received"
-                        ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                        : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                        ? "border-forest/40 bg-forest/10 text-forest"
+                        : "border-destructive/40 bg-destructive/10 text-destructive"
                     )}
                   >
                     {log.type === "received" ? "Amount Received" : "Amount Paid"}
@@ -1140,7 +1143,7 @@ export default function DailyLogsPage() {
                   <p
                     className={cn(
                       "font-mono text-sm font-semibold",
-                      log.type === "received" ? "text-cyan-300" : "text-rose-300"
+                      log.type === "received" ? "text-forest" : "text-destructive"
                     )}
                   >
                     ₹{log.amount.toLocaleString("en-IN")}
@@ -1150,20 +1153,20 @@ export default function DailyLogsPage() {
             ))}
 
             {logType === "paid" && todayPaidSummary.payments.length > 0 && (
-              <div className="mt-2 rounded-lg border border-rose-500/25 bg-rose-500/8 p-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-200">
+              <div className="mt-2 rounded-lg border border-destructive/25 bg-destructive/8 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-destructive/80">
                   Today Detailed Payments
                 </p>
                 <div className="max-h-44 space-y-1.5 overflow-y-auto pr-1">
                   {todayPaidSummary.payments.map((payment) => (
                     <div
                       key={payment.id}
-                      className="flex items-center justify-between rounded-md border border-rose-500/20 bg-rose-500/5 px-2 py-1.5 text-xs"
+                      className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 px-2 py-1.5 text-xs"
                     >
-                      <span className="text-rose-100">
+                      <span className="text-destructive/80">
                         {payment.vendorName} • {payment.method} • Bill #{shortBillId(payment.billId)} • {formatDateTime(payment.paymentDate)}
                       </span>
-                      <span className="font-mono text-rose-200">
+                      <span className="font-mono text-destructive">
                         ₹{asNumber(payment.amount).toLocaleString("en-IN")}
                       </span>
                     </div>

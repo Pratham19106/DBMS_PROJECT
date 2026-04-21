@@ -57,7 +57,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const activeLabel = navItems.find((item) => item.href === pathname)?.label ?? "Dashboard"
 
   return (
-    <div className="kv-paper min-h-screen text-foreground">
+    <div className="kv-paper relative min-h-screen overflow-hidden text-foreground">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 top-24 h-96 w-96 rounded-full bg-amber/12 blur-3xl" />
+        <div className="absolute -right-36 bottom-16 h-120 w-120 rounded-full bg-forest/10 blur-3xl" />
+      </div>
       {/* Editorial top header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
@@ -184,7 +188,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main content stage */}
-      <main ref={mainRef} className="pb-24 md:pb-12">
+      <main ref={mainRef} className="relative z-10 pb-24 md:pb-12">
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
           {children}
         </div>

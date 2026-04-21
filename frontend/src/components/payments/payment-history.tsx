@@ -172,13 +172,13 @@ export function PaymentHistory() {
         : "Failed to load payment history"
 
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-red-300">
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
         <p>{message}</p>
         <Button
           type="button"
           variant="outline"
           onClick={() => void paymentLogsQuery.refetch()}
-          className="mt-3 border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+          className="mt-3 border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
         >
           Retry
         </Button>
@@ -262,7 +262,12 @@ export function PaymentHistory() {
                   <TableCell className="text-muted-foreground">
                     {log.entry_type === "received" ? "-" : `#${shortBillId(log.bill_id)}`}
                   </TableCell>
-                  <TableCell className="text-right font-mono font-semibold text-emerald-400">
+                  <TableCell
+                    className={cn(
+                      "text-right font-mono font-semibold",
+                      log.entry_type === "received" ? "text-forest" : "text-destructive"
+                    )}
+                  >
                     ₹{asNumber(log.amount).toLocaleString("en-IN")}
                   </TableCell>
                 </TableRow>

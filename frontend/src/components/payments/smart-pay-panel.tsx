@@ -209,13 +209,13 @@ export function SmartPayPanel() {
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold text-red-300">Pay Smart</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-red-300">
+        <CardContent className="space-y-3 text-sm text-destructive">
           <p>{message}</p>
           <Button
             type="button"
             variant="outline"
             onClick={() => void suggestionQuery.refetch()}
-            className="border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+            className="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
           >
             Retry
           </Button>
@@ -228,8 +228,8 @@ export function SmartPayPanel() {
     <Card className="border-border/50 bg-card">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-            <Sparkles className="h-4 w-4 text-emerald-500" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-forest/10">
+            <Sparkles className="h-4 w-4 text-forest" />
           </div>
           <CardTitle className="text-lg font-semibold text-card-foreground">
             Pay Smart
@@ -264,7 +264,7 @@ export function SmartPayPanel() {
             </Select>
             <Button
               onClick={handleGeneratePlan}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="bg-forest text-cream hover:bg-forest-deep"
               disabled={suggestedVendors.length === 0 || vendorBillsQuery.isLoading}
             >
               Generate Plan
@@ -283,7 +283,7 @@ export function SmartPayPanel() {
             </Button>
           </div>
           {actionError && (
-            <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {actionError}
             </div>
           )}
@@ -302,7 +302,7 @@ export function SmartPayPanel() {
                     key={`${item.vendorId}-${item.billId ?? "none"}`}
                     className={cn(
                       "rounded-lg border border-border/50 bg-secondary/30 p-4 transition-all",
-                      isPaid && "border-emerald-500/30 bg-emerald-500/5 opacity-60"
+                      isPaid && "border-forest/30 bg-forest/5 opacity-60"
                     )}
                   >
                     <div className="mb-3 flex items-center justify-between">
@@ -318,10 +318,10 @@ export function SmartPayPanel() {
                         variant="outline"
                         className={cn(
                           "text-xs",
-                          item.priority === "urgent" && "border-red-500/30 bg-red-500/10 text-red-400",
-                          item.priority === "high" && "border-amber-500/30 bg-amber-500/10 text-amber-400",
-                          item.priority === "medium" && "border-blue-500/30 bg-blue-500/10 text-blue-400",
-                          item.priority === "low" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          item.priority === "urgent" && "border-destructive/30 bg-destructive/10 text-destructive",
+                          item.priority === "high" && "border-amber/30 bg-amber/12 text-amber-deep",
+                          item.priority === "medium" && "border-forest/30 bg-forest/8 text-forest",
+                          item.priority === "low" && "border-forest-soft/30 bg-forest-soft/10 text-forest-soft"
                         )}
                       >
                         {item.priority.toUpperCase()} priority
@@ -331,7 +331,7 @@ export function SmartPayPanel() {
                     <div className="mb-3 grid grid-cols-3 gap-2 text-sm">
                       <div>
                         <p className="text-xs text-muted-foreground">Suggested</p>
-                        <p className="font-mono font-semibold text-emerald-400">
+                        <p className="font-mono font-semibold text-forest">
                           ₹{item.suggestedAmount.toLocaleString("en-IN")}
                         </p>
                       </div>
@@ -364,7 +364,7 @@ export function SmartPayPanel() {
                       className={cn(
                         "w-full",
                         isPaid
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          ? "border-forest/30 bg-forest/10 text-forest"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                       )}
                       onClick={() => void handleMarkPaid(item)}

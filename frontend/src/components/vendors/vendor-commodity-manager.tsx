@@ -204,10 +204,10 @@ export function VendorCommodityManager({
           )}
         </div>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
+          <span className="rounded-full border border-forest/30 bg-forest/10 px-2 py-0.5 text-forest">
             Linked: {linkedCommodities.length}
           </span>
-          <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-blue-300">
+          <span className="rounded-full border border-amber/30 bg-amber/12 px-2 py-0.5 text-amber-deep">
             Available: {availableCommodities.length}
           </span>
         </div>
@@ -215,7 +215,7 @@ export function VendorCommodityManager({
 
       <div className="rounded-lg border border-border/50 bg-card/35 p-3">
         <div className="mb-2 flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-emerald-300" />
+          <Link2 className="h-4 w-4 text-forest" />
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Quick Assign Existing Commodity
           </p>
@@ -240,7 +240,7 @@ export function VendorCommodityManager({
                   }}
                   className={
                     selectedCommodityId === String(commodity.id)
-                      ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20"
+                      ? "border-forest/50 bg-forest/12 text-forest hover:bg-forest/18"
                       : "border-border/60 bg-secondary/50 text-muted-foreground hover:bg-secondary"
                   }
                 >
@@ -248,7 +248,7 @@ export function VendorCommodityManager({
                 </Button>
               ))}
             {!loading && availableCommodities.length === 0 && (
-              <p className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-1 text-xs text-emerald-300">
+              <p className="rounded-md border border-forest/20 bg-forest/5 px-2 py-1 text-xs text-forest">
                 All commodities are already linked.
               </p>
             )}
@@ -257,7 +257,7 @@ export function VendorCommodityManager({
             type="button"
             onClick={handleAddCommodity}
             disabled={loading || adding || availableCommodities.length === 0}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            className="bg-forest text-cream hover:bg-forest-deep"
           >
             {adding ? "Adding..." : "Assign Selected Commodity"}
           </Button>
@@ -266,7 +266,7 @@ export function VendorCommodityManager({
 
       <div className="rounded-lg border border-border/50 bg-card/35 p-3">
         <div className="mb-2 flex items-center gap-2">
-          <PackagePlus className="h-4 w-4 text-blue-300" />
+          <PackagePlus className="h-4 w-4 text-amber-deep" />
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Create and Assign Commodity
           </p>
@@ -319,7 +319,7 @@ export function VendorCommodityManager({
                   onClick={() => setNewCommodityUnit(unit.value)}
                   className={
                     newCommodityUnit === unit.value
-                      ? "border-blue-500/50 bg-blue-500/15 text-blue-300 hover:bg-blue-500/20"
+                      ? "border-amber/50 bg-amber/20 text-amber-deep hover:bg-amber/25"
                       : "border-border/60 bg-secondary/50 text-muted-foreground hover:bg-secondary"
                   }
                 >
@@ -333,7 +333,7 @@ export function VendorCommodityManager({
               type="button"
               onClick={handleCreateAndAssignCommodity}
               disabled={creating}
-              className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              className="w-full bg-amber text-forest hover:bg-amber-deep"
             >
               {creating ? "Creating..." : "Create & Assign"}
             </Button>
@@ -368,7 +368,7 @@ export function VendorCommodityManager({
       )}
 
       {combinedError && (
-        <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-xs text-red-300">
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs text-destructive">
           {combinedError}
         </p>
       )}

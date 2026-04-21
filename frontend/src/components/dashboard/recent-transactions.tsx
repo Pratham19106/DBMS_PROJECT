@@ -67,8 +67,8 @@ export function RecentTransactions({ transactions, cashFlowData, loading = false
               className={cn(
                 "rounded border px-2 py-1",
                 totals.net >= 0
-                  ? "border-cyan-500/25 bg-cyan-500/10 text-cyan-200"
-                  : "border-amber-500/25 bg-amber-500/10 text-amber-200"
+                  ? "border-forest/25 bg-forest/8 text-forest"
+                  : "border-amber/25 bg-amber/10 text-amber-deep"
               )}
             >
               Net: ₹{totals.net.toLocaleString("en-IN")}
@@ -78,38 +78,39 @@ export function RecentTransactions({ transactions, cashFlowData, loading = false
             <LineChart data={chartData} margin={{ top: 5, right: 8, left: -14, bottom: 0 }}>
               <defs>
                 <linearGradient id="cashInflowFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity={0.32} />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#1a3d2a" stopOpacity={0.26} />
+                  <stop offset="100%" stopColor="#1a3d2a" stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="cashOutflowFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#a13b2b" stopOpacity={0.26} />
+                  <stop offset="100%" stopColor="#a13b2b" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(26, 61, 42, 0.1)" />
               <XAxis
                 dataKey="date"
-                tick={{ fill: "#6b7280", fontSize: 10 }}
-                axisLine={{ stroke: "#374151" }}
+                tick={{ fill: "#5a6b5e", fontSize: 10 }}
+                axisLine={{ stroke: "rgba(26, 61, 42, 0.2)" }}
                 tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: "#6b7280", fontSize: 10 }}
+                tick={{ fill: "#5a6b5e", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
               />
-              <ReferenceLine y={0} stroke="rgba(148,163,184,0.35)" strokeDasharray="3 3" />
+              <ReferenceLine y={0} stroke="rgba(26, 61, 42, 0.22)" strokeDasharray="3 3" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1f2937",
-                  border: "1px solid #374151",
+                  backgroundColor: "#fbf9f5",
+                  border: "1px solid #d6d0c4",
                   borderRadius: "8px",
                   padding: "8px 12px",
                   fontSize: "12px",
+                  color: "#1a3d2a",
                 }}
-                labelStyle={{ color: "#f3f4f6", fontWeight: 500, marginBottom: "4px" }}
+                labelStyle={{ color: "#1a3d2a", fontWeight: 500, marginBottom: "4px" }}
                 formatter={(value: number, name: string) => [
                   `₹${value.toLocaleString("en-IN")}`,
                   name === "inflow"
@@ -137,7 +138,7 @@ export function RecentTransactions({ transactions, cashFlowData, loading = false
               <Line
                 type="natural"
                 dataKey="inflow"
-                stroke="#22c55e"
+                stroke="#1a3d2a"
                 strokeWidth={2.5}
                 dot={false}
                 name="Inflow"
@@ -145,7 +146,7 @@ export function RecentTransactions({ transactions, cashFlowData, loading = false
               <Line
                 type="natural"
                 dataKey="outflow"
-                stroke="#ef4444"
+                stroke="#a13b2b"
                 strokeWidth={2.5}
                 dot={false}
                 name="Outflow"
@@ -153,7 +154,7 @@ export function RecentTransactions({ transactions, cashFlowData, loading = false
               <Line
                 type="natural"
                 dataKey="net"
-                stroke="#38bdf8"
+                stroke="#d4a574"
                 strokeWidth={2}
                 dot={false}
                 strokeDasharray="5 4"
@@ -163,11 +164,11 @@ export function RecentTransactions({ transactions, cashFlowData, loading = false
           </ResponsiveContainer>
           <div className="mt-1 flex items-center justify-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="h-0.5 w-4 rounded bg-emerald-500" />
+              <span className="h-0.5 w-4 rounded bg-forest" />
               <span className="text-muted-foreground">Payments</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="h-0.5 w-4 rounded bg-red-500" />
+              <span className="h-0.5 w-4 rounded bg-destructive" />
               <span className="text-muted-foreground">Supplies</span>
             </div>
           </div>
